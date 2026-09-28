@@ -90,6 +90,16 @@ public:
         }
 
         pixel_color /= samples_per_pixel;
+
+        // Color conversion from RGB to Grayscale using Native PAL method
+        //
+        // Each channel gets multiplied by a constant that mimicks human perception of red, blue and green.
+
+        float gray = 0.222 * pixel_color[0] + 0.707 * pixel_color[1] + 0.071 * pixel_color[2];
+        pixel_color[0] = gray;
+        pixel_color[1] = gray;
+        pixel_color[2] = gray;
+
         setColor(pixel_color[0], pixel_color[1], pixel_color[2]);
         setPixel(i, j);
       }
