@@ -71,7 +71,7 @@ public:
   }
 
   
-  void render(const hittable& world, const bool toggle_anaglyph = false) {
+  void render(const hittable& world, const bool toggle_anaglyph = false, const float e = 0.0) {
     initialize();
 
     cout << "Image Resolution: " << image_width << "x" << image_height << "\n";
@@ -85,9 +85,15 @@ public:
         color pixel_color(0, 0, 0);
 
         for (int sample = 0; sample < samples_per_pixel; ++sample) {
-          ray r = get_ray(i, j);
-          color rayColor = ray_color(r, world);
-          pixel_color += toggle_anaglyph ? toGrayscale(rayColor) : rayColor;
+            ray r = get_ray(i, j);
+            if (toggle_anaglyph) {
+                ray rr = get_ray(i, j, e);
+                ray rl = get_ray(i, j, -e);
+                pixel_color += toAnaglyph(ray_color(rl, world, true), true) + toAnaglyph(ray_color(rr, world, true), false);
+            }
+            else {
+                pixel_color += ray_color(r, world);
+            }
         }
 
         pixel_color /= samples_per_pixel;
@@ -102,7 +108,7 @@ public:
     cout << "\n" << "Rendering time: " << dif << "\n";
   }
 
-  void parallel_render(const hittable& world, const bool toggle_anaglyph = false) {
+  void parallel_render(const hittable& world, const bool toggle_anaglyph = false, const float e = 245.0) {
     initialize();
 
     cout << "Image Resolution: " << image_width << "x" << image_height << "\n255\n";
@@ -118,8 +124,14 @@ public:
 
         for (int sample = 0; sample < samples_per_pixel; ++sample) {
           ray r = get_ray(i, j);
-          color rayColor = ray_color(r, world);
-          pixel_color += toggle_anaglyph ? toGrayscale(rayColor) : rayColor;
+          if (toggle_anaglyph) {
+             ray rr = get_ray(i, j, e);
+             ray rl = get_ray(i, j, -e);
+             pixel_color += toAnaglyph(ray_color(rl, world, true), true) + toAnaglyph(ray_color(rr, world, true), false);
+          }
+          else {
+            pixel_color += ray_color(r, world);
+          }
         }
         
         pixel_color /= samples_per_pixel;
@@ -148,26 +160,24 @@ private:
 
   vec3   u, v, w;        // Camera frame basis vectors
 
-  color toGrayscale(color rayColor) {
-      // Color conversion from RGB to Grayscale using Native PAL method
-      //
+  color toAnaglyph(color rayColor, bool isLeft) {
       // Each channel gets multiplied by a constant that mimicks human perception of red, blue and green.
-
-      float gray = 0.222 * rayColor[0] + 0.707 * rayColor[1] + 0.071 * rayColor[2];
-      rayColor[0] = gray;
-      rayColor[1] = gray;
-      rayColor[2] = gray;
+      float gray = 0.222f * rayColor[0] + 0.707f * rayColor[1] + 0.071f * rayColor[2];
+      
+      rayColor[0] = isLeft ? gray : 0.0f;
+      rayColor[1] = isLeft ? 0.0f : gray;
+      rayColor[2] = isLeft ? 0.0f : gray;
 
       return rayColor;
   }
 
-  ray get_ray(int i, int j) const {
+  ray get_ray(int i, int j, float e = 0.0) const {
     // Get a randomly sampled camera ray for the pixel at location i,j.
 
     vec3 pixel_center = pixel00_loc + (i * pixel_delta_u) + (j * pixel_delta_v);
     vec3 pixel_sample = pixel_center + pixel_sample_square();
 
-    point3 ray_origin = camera_center;
+    point3 ray_origin = camera_center + 0.5 * e * pixel_delta_u;
     vec3 ray_direction = pixel_sample - ray_origin;
 
     return ray(ray_origin, ray_direction);
@@ -180,7 +190,7 @@ private:
     return (px * pixel_delta_u) + (py * pixel_delta_v);
   }
 
-  color ray_color(const ray& r, const hittable& world) {
+  color ray_color(const ray& r, const hittable& world, const bool toggle_anaglyph = false) {
     hit_record rec;
     if (world.hit(r, interval(0, infinity), rec)) {
       return 0.5f * (rec.normal + color(1.0f, 1.0f, 1.0f));

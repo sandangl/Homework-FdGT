@@ -63,7 +63,7 @@ int main(int argc, char* argv[])
 	cam.samples_per_pixel = 8;
 	
 	cam.vfov = 90;
-	cam.lookfrom = point3(-2, 2, 1);
+	cam.lookfrom = point3(3, 2, -4);
 	cam.lookat = point3(0, 0, -1);
 		
 	cam.initialize();
@@ -73,8 +73,16 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	//cam.render(world);
-	cam.parallel_render(world, true);
+	// Distance between right and left eye
+	//
+	// Typical values:
+	//    - interocular distance: 6.5 cm (approx. 246px @ 1280x720)
+	//	  - 1% of viewport width
+
+	float e = 15;
+
+	//cam.render(world, true, e);
+	cam.parallel_render(world, true, e);
 
 	SDL_RenderPresent(renderer);
 
