@@ -71,7 +71,7 @@ public:
   }
 
   
-  void render(const hittable& world) {
+  void render(const hittable& world, const bool toggle_anaglyph = false) {
     initialize();
 
     cout << "Image Resolution: " << image_width << "x" << image_height << "\n";
@@ -86,19 +86,11 @@ public:
 
         for (int sample = 0; sample < samples_per_pixel; ++sample) {
           ray r = get_ray(i, j);
-          pixel_color += ray_color(r, world);
+          color rayColor = ray_color(r, world);
+          pixel_color += toggle_anaglyph ? toGrayscale(rayColor) : rayColor;
         }
 
         pixel_color /= samples_per_pixel;
-
-        // Color conversion from RGB to Grayscale using Native PAL method
-        //
-        // Each channel gets multiplied by a constant that mimicks human perception of red, blue and green.
-
-        float gray = 0.222 * pixel_color[0] + 0.707 * pixel_color[1] + 0.071 * pixel_color[2];
-        pixel_color[0] = gray;
-        pixel_color[1] = gray;
-        pixel_color[2] = gray;
 
         setColor(pixel_color[0], pixel_color[1], pixel_color[2]);
         setPixel(i, j);
@@ -110,7 +102,7 @@ public:
     cout << "\n" << "Rendering time: " << dif << "\n";
   }
 
-  void parallel_render(const hittable& world) {
+  void parallel_render(const hittable& world, const bool toggle_anaglyph = false) {
     initialize();
 
     cout << "Image Resolution: " << image_width << "x" << image_height << "\n255\n";
@@ -126,7 +118,8 @@ public:
 
         for (int sample = 0; sample < samples_per_pixel; ++sample) {
           ray r = get_ray(i, j);
-          pixel_color += ray_color(r, world);
+          color rayColor = ray_color(r, world);
+          pixel_color += toggle_anaglyph ? toGrayscale(rayColor) : rayColor;
         }
         
         pixel_color /= samples_per_pixel;
@@ -154,6 +147,19 @@ private:
   vec3   pixel_delta_v;  // Offset to pixel below
 
   vec3   u, v, w;        // Camera frame basis vectors
+
+  color toGrayscale(color rayColor) {
+      // Color conversion from RGB to Grayscale using Native PAL method
+      //
+      // Each channel gets multiplied by a constant that mimicks human perception of red, blue and green.
+
+      float gray = 0.222 * rayColor[0] + 0.707 * rayColor[1] + 0.071 * rayColor[2];
+      rayColor[0] = gray;
+      rayColor[1] = gray;
+      rayColor[2] = gray;
+
+      return rayColor;
+  }
 
   ray get_ray(int i, int j) const {
     // Get a randomly sampled camera ray for the pixel at location i,j.

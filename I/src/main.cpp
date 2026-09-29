@@ -73,8 +73,8 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	cam.render(world);
-	//cam.parallel_render(world);
+	//cam.render(world);
+	cam.parallel_render(world, true);
 
 	SDL_RenderPresent(renderer);
 
