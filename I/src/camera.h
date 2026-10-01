@@ -108,7 +108,7 @@ public:
     cout << "\n" << "Rendering time: " << dif << "\n";
   }
 
-  void parallel_render(const hittable& world, const bool toggle_anaglyph = false, const float e = 245.0) {
+  void parallel_render(const hittable& world, const bool toggle_anaglyph = false, const float e = 0.0) {
     initialize();
 
     cout << "Image Resolution: " << image_width << "x" << image_height << "\n255\n";
