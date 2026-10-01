@@ -51,10 +51,15 @@ int main(int argc, char* argv[])
 	hittable_list world;
 
 	world.add(make_shared<sphere>(point3(0.0f, -100.5f, -1.0f), 100.0f));
-	world.add(make_shared<sphere>(point3(0.0f, 0.0f, -1.0f), 0.5f));
-	world.add(make_shared<sphere>(point3(-1.0f, 0.0f, -1.0f), 0.5f));
-	world.add(make_shared<sphere>(point3(-1.0f, 0.0f, -1.0f), -0.4f));
-	world.add(make_shared<sphere>(point3(1.0f, 0.0f, -1.0f), 0.5f));
+	world.add(make_shared<sphere>(point3(1.0f, 0.0f, -0.0f), 0.3f));
+	world.add(make_shared<sphere>(point3(2.5f, 1.0f, -0.5f), 0.8f));
+	world.add(make_shared<sphere>(point3(1.8f, 0.1f, -1.0f), 0.3f));
+	world.add(make_shared<sphere>(point3(-2.5f, 0.2f, -3.0f), 0.4f));
+	world.add(make_shared<sphere>(point3(1.2f, 1.2f, -2.5f), 0.3f));
+	world.add(make_shared<sphere>(point3(1.0f, 2.4f, -3.5f), 0.1f));
+	world.add(make_shared<sphere>(point3(0.3f, 2.4f, 3.5f), 0.5f));
+	world.add(make_shared<sphere>(point3(-2.5f, 0.2f, -3.0f), 0.7f));
+	world.add(make_shared<sphere>(point3(-3.5f, -0.5f, -3.0f), 0.5f));
 
 
 	camera cam;
@@ -63,7 +68,7 @@ int main(int argc, char* argv[])
 	cam.samples_per_pixel = 8;
 	
 	cam.vfov = 90;
-	cam.lookfrom = point3(3, 2, -4);
+	cam.lookfrom = point3(2, 3, -4);
 	cam.lookat = point3(0, 0, -1);
 		
 	cam.initialize();
@@ -73,13 +78,16 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	// Distance between right and left eye
+	// Interocular distance
 	//
 	// Typical values:
 	//    - interocular distance: 6.5 cm (approx. 246px @ 1280x720)
 	//	  - 1% of viewport width
+	//	  - 5% of viewport width
+	//
+	// By multiplying e by -1, the anaglyph gets inverted with an inward 3D effect.
 
-	float e = 15;
+	float e = cam.image_width * 0.05;
 
 	//cam.render(world, true, e);
 	cam.parallel_render(world, true, e);
@@ -99,14 +107,14 @@ int main(int argc, char* argv[])
 
 		case SDL_KEYDOWN:
 			switch (event.key.keysym.sym) {
-			case SDLK_ESCAPE:
-				quit = true;
-				break;
-				// cases for other keypresses
+				case SDLK_ESCAPE:
+					quit = true;
+					break;
+					// cases for other keypresses
 
-			case SDLK_s:
-				saveScreenshotBMP("screenshot.bmp");
-				break;
+				case SDLK_s:
+					saveScreenshotBMP("screenshot.bmp");
+					break;
 			}
 		}
 	}
