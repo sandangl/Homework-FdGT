@@ -5,6 +5,7 @@
 #include <cmath>
 #include <iostream>
 #include <utility>
+#include "vec3.h"
 
 using std::sqrt;
 
@@ -12,7 +13,7 @@ template <std::size_t N>
 class vec {
 public:
   float e[N]{};
-
+       
   float operator[](int i) const { return e[i]; }
   float& operator[](int i) { return e[i]; }
 
@@ -117,6 +118,14 @@ inline vec<N> operator/(vec<N> v, float t) {
 template <std::size_t N>
 inline float dot(const vec<N>& u, const vec<N>& v) {
   return u.dot(v);
+}
+
+inline vec<3> fromVec3(vec3 v3) {
+    return vec<3>{v3.x, v3.y, v3.z};
+}
+
+inline vec3 toVec3(vec<3> v) {
+    return vec3(v[0], v[1], v[2]);
 }
 
 #endif

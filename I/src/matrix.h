@@ -6,6 +6,7 @@
 #include <iostream>
 #include <utility>
 #include "vec.h"
+#include "point3_list.h"
 
 using std::sqrt;
 
@@ -154,6 +155,24 @@ template <std::size_t R, std::size_t C>
 inline matrix<R, C> hadamard(const matrix<R, C> &A, const matrix<R, C> &B)
 {
   return A.hadamard(B);
+}
+
+template <std::size_t R>
+inline matrix<R, 3> fromPoint3List(point3_list& l) {
+    matrix<R, 3> m{};
+    for (int i = 0; i < R; i++) {
+        m[i] = toVec3(l.points[i]);
+    }
+    return m;
+}
+
+template <std::size_t R>
+inline point3_list toPoint3List(matrix<R, 3> m) {
+    point3_list l{};
+    for (int i = 0; i < R; i++) {
+        l.points[i] = fromVec3(m[i]);
+    }
+    return l;
 }
 
 #endif
