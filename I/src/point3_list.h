@@ -20,7 +20,7 @@ public:
   }
 
   void add(point3_list l) {
-    points.insert(points.end(), l.begin(), l.end());
+    points.insert(points.end(), l.points.begin(), l.points.end());
   }
 };
 
