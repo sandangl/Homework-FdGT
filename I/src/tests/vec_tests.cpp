@@ -1,45 +1,11 @@
 // Small tests for vec.h, written with the standard library only.
-// Run all of them, or pass part of a test name as first argument (e.g. "broadcast")
-// to run only the matching ones.
 //
 // Note: mixing sizes in a free operator (vec<3> + vec<4>) must not compile,
 // so it cannot be checked here at runtime.
 
-#include <cstring>
-#include <iostream>
 #include <sstream>
 
-#include "../vec.h"
-
-static bool passed;
-
-template <std::size_t N>
-static void expect(const vec<N>& got, const vec<N>& want) {
-  for (std::size_t i = 0; i < N; i++) {
-    if (got.e[i] != want.e[i]) {
-      std::cout << "  expected " << want << ", got " << got << "\n";
-      passed = false;
-      return;
-    }
-  }
-}
-
-static void expect(float got, float want) {
-  if (got != want) {
-    std::cout << "  expected " << want << ", got " << got << "\n";
-    passed = false;
-  }
-}
-
-static int run(const char* name, void (*test)(), const char* filter) {
-  if (filter && !std::strstr(name, filter))
-    return 0;
-
-  passed = true;
-  test();
-  std::cout << (passed ? "PASS " : "FAIL ") << name << "\n";
-  return passed ? 0 : 1;
-}
+#include "test.h"
 
 //
 // Basic operations
@@ -144,8 +110,7 @@ static void broadcast_dot_bigger() {
   expect(a.dot(vec<4>{1, 1, 1, 99}), 6);
 }
 
-int main(int argc, char** argv) {
-  const char* filter = argc > 1 ? argv[1] : nullptr;
+int run_vec_tests(const char* filter) {
   int failed = 0;
 
   failed += run("zero_init", zero_init, filter);
@@ -166,6 +131,5 @@ int main(int argc, char** argv) {
   failed += run("broadcast_dot_smaller", broadcast_dot_smaller, filter);
   failed += run("broadcast_dot_bigger", broadcast_dot_bigger, filter);
 
-  std::cout << failed << " failed\n";
   return failed;
 }

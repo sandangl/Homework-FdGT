@@ -47,10 +47,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="matrix_tests.cpp" />
     <ClCompile Include="vec_tests.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\matrix.h" />
     <ClInclude Include="..\vec.h" />
+    <ClInclude Include="test.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>
