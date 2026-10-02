@@ -161,16 +161,16 @@ template <std::size_t R>
 inline matrix<R, 3> fromPoint3List(const point3_list& l) {
     matrix<R, 3> m{};
     for (std::size_t i = 0; i < R; i++) {
-        m[i] = fromVec3(l.points.at(i));
+        m.rows[i] = fromVec3(l.points.at(i));
     }
     return m;
 }
 
 template <std::size_t R>
-inline point3_list toPoint3List(const matrix&<R, 3> m) {
+inline point3_list toPoint3List(const matrix<R, 3>& m) {
     point3_list l{};
     for (std::size_t i = 0; i < R; i++) {
-        l.points[i] = toVec3(m[i]);
+        l.add(toVec3(m.rows[i]));
     }
     return l;
 }

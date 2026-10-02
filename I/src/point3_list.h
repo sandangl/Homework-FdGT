@@ -19,6 +19,9 @@ public:
     points.push_back(point);
   }
 
+  void add(point3_list l) {
+    points.insert(points.end(), l.begin(), l.end());
+  }
 };
 
 using path = point3_list;
