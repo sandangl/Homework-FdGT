@@ -19,7 +19,7 @@ public:
   void clear() { points.clear(); }
 
   void add(shared_ptr<point3> point) {
-    points.push_back(points);
+    points.push_back(point);
   }
 
 };
