@@ -197,7 +197,7 @@ Is just as convenient as reusing the `*=` overridden operator.
 #### `matrix.h` implementation
 
 `matrix` class takes advantage of the same paradigm explained above.
-We regarded matrix as a simple list of column vectors, so that an $N\times M$ matrix is actually an array of size M of `vec<N>`.
+We regarded matrix as a simple list of row vectors, so that an $R\times C$ matrix is actually an array of size R of `vec<C>`.
 
 ```C++
 template <std::size_t R, std::size_t C>
@@ -219,7 +219,7 @@ We provided the following operations:
 
 Since most of these operations are reduced to vector operations, most of the complexity was managed by `vec` class in the first place.
 
-Note: Catmull-Rom needs a **row vector** by matrix product, which in our case would not be defined, since we're taking into account just column vectors; a row vector of $N$ elements can be seen as a `matrix<1,N>`, which would solve our problem. However, looking at our vector-by-matrix definition:
+Note: Catmull-Rom needs a **row vector** by matrix product. Since our matrix is naturally structured as an array of row vectors, implementing this was straightforward; a row vector of $N$ elements can be simply passed as a `vec<N>` to scale and sum the matrix rows. However, looking at our vector-by-matrix definition:
 
 ```C++
 
@@ -241,10 +241,10 @@ Note: Catmull-Rom needs a **row vector** by matrix product, which in our case wo
   }
 ```
 
-it is already reduced to a column vectors product, so that doing:
+this already performs a linear combination of the matrix's rows, so that doing:
 
-1. `matrix<1,4> * matrix<3,5>`
-2. `vec<4> * matrix<3,5>`
+1. `matrix<1,4> * matrix<4,5>`
+2. `vec<4> * matrix<4,5>`
 
 is equivalent.
 
