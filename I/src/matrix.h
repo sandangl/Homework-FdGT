@@ -128,7 +128,7 @@ inline matrix<R, C> operator-(matrix<R, C> A, const matrix<R, C> &B)
   return A += -B;
 }
 
-// Scalar times vector
+// Scalar times matrix
 template <std::size_t R, std::size_t C>
 inline matrix<R, C> operator*(float t, matrix<R, C> A)
 {

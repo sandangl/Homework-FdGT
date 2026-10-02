@@ -6,7 +6,7 @@
 #include <memory>
 #include <vector>
 
-class point3_list : public point3 {
+class point3_list {
 public:
   std::vector<point3> points;
 
