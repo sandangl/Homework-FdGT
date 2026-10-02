@@ -122,6 +122,34 @@ static void matrix_catmull_rom_midpoint() {
   expect(catmull_rom(0.5f, points), vec<3>{1.5f, 3, 1});
 }
 
+//
+// Conversions with point3_list
+//
+
+static point3_list sample_points() {
+  point3_list l;
+  l.add(point3(1, 2, 3));
+  l.add(point3(4, 5, 6));
+  return l;
+}
+
+static void matrix_from_point3_list() {
+  point3_list l = sample_points();
+  expect(fromPoint3List<2>(l), sample());
+}
+
+static void matrix_to_point3_list() {
+  point3_list l = toPoint3List(sample());
+  expect(l.points.size(), 2);
+  expect(fromVec3(l.points[0]), vec<3>{1, 2, 3});
+  expect(fromVec3(l.points[1]), vec<3>{4, 5, 6});
+}
+
+static void matrix_point3_list_round_trip() {
+  point3_list l = toPoint3List(sample());
+  expect(fromPoint3List<2>(l), sample());
+}
+
 int run_matrix_tests(const char* filter) {
   int failed = 0;
 
@@ -143,6 +171,10 @@ int run_matrix_tests(const char* filter) {
 
   failed += run("matrix_catmull_rom_endpoints", matrix_catmull_rom_endpoints, filter);
   failed += run("matrix_catmull_rom_midpoint", matrix_catmull_rom_midpoint, filter);
+
+  failed += run("matrix_from_point3_list", matrix_from_point3_list, filter);
+  failed += run("matrix_to_point3_list", matrix_to_point3_list, filter);
+  failed += run("matrix_point3_list_round_trip", matrix_point3_list_round_trip, filter);
 
   return failed;
 }

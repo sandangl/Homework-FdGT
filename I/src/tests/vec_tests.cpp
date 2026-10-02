@@ -110,6 +110,21 @@ static void broadcast_dot_bigger() {
   expect(a.dot(vec<4>{1, 1, 1, 99}), 6);
 }
 
+//
+// Conversions with vec3
+//
+
+static void from_vec3() {
+  expect(fromVec3(vec3(1, 2, 3)), vec<3>{1, 2, 3});
+}
+
+static void to_vec3() {
+  vec3 v = toVec3(vec<3>{1, 2, 3});
+  expect(v.x(), 1);
+  expect(v.y(), 2);
+  expect(v.z(), 3);
+}
+
 int run_vec_tests(const char* filter) {
   int failed = 0;
 
@@ -130,6 +145,9 @@ int run_vec_tests(const char* filter) {
   failed += run("broadcast_multiply_bigger", broadcast_multiply_bigger, filter);
   failed += run("broadcast_dot_smaller", broadcast_dot_smaller, filter);
   failed += run("broadcast_dot_bigger", broadcast_dot_bigger, filter);
+
+  failed += run("from_vec3", from_vec3, filter);
+  failed += run("to_vec3", to_vec3, filter);
 
   return failed;
 }

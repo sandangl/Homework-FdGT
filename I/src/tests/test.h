@@ -28,6 +28,13 @@ inline void expect(float got, float want) {
   }
 }
 
+inline void expect(std::size_t got, std::size_t want) {
+  if (got != want) {
+    std::cout << "  expected " << want << ", got " << got << "\n";
+    passed = false;
+  }
+}
+
 inline int run(const char* name, void (*test)(), const char* filter) {
   if (filter && !std::strstr(name, filter))
     return 0;
