@@ -121,7 +121,7 @@ inline float dot(const vec<N>& u, const vec<N>& v) {
 }
 
 inline vec<3> fromVec3(vec3 v3) {
-    return vec<3>{v3.x, v3.y, v3.z};
+    return vec<3>{v3.x(), v3.y(), v3.z()};
 }
 
 inline vec3 toVec3(vec<3> v) {

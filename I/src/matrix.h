@@ -158,19 +158,19 @@ inline matrix<R, C> hadamard(const matrix<R, C> &A, const matrix<R, C> &B)
 }
 
 template <std::size_t R>
-inline matrix<R, 3> fromPoint3List(point3_list& l) {
+inline matrix<R, 3> fromPoint3List(const point3_list& l) {
     matrix<R, 3> m{};
-    for (int i = 0; i < R; i++) {
-        m[i] = toVec3(l.points[i]);
+    for (std::size_t i = 0; i < R; i++) {
+        m[i] = fromVec3(l.points.at(i));
     }
     return m;
 }
 
 template <std::size_t R>
-inline point3_list toPoint3List(matrix<R, 3> m) {
+inline point3_list toPoint3List(const matrix&<R, 3> m) {
     point3_list l{};
-    for (int i = 0; i < R; i++) {
-        l.points[i] = fromVec3(m[i]);
+    for (std::size_t i = 0; i < R; i++) {
+        l.points[i] = toVec3(m[i]);
     }
     return l;
 }
