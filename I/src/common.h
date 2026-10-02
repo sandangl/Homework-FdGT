@@ -8,6 +8,7 @@
 // Common Headers
 #include "ray.h"
 #include "vec3.h"
+#include "vec.h"
 
 
 // Usings
