@@ -6,19 +6,16 @@
 #include <memory>
 #include <vector>
 
-using std::shared_ptr;
-using std::make_shared;
-
 class point3_list : public point3 {
 public:
-  std::vector<shared_ptr<point3>> points;
+  std::vector<point3> points;
 
   point3_list() {}
-  point3_list(shared_ptr<point3> point) { add(point); }
+  point3_list(point3 point) { add(point); }
 
   void clear() { points.clear(); }
 
-  void add(shared_ptr<point3> point) {
+  void add(point3 point) {
     points.push_back(point);
   }
 
