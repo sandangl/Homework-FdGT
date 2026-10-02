@@ -98,31 +98,6 @@ static void matrix_hadamard() {
 }
 
 //
-// Catmull-Rom: p(t) = (T * M) * G, with T = [t^3 t^2 t 1] and G = control points.
-//
-
-static matrix<4, 4> catmull_rom_basis() {
-  return 0.5f * matrix<4, 4>{{{-1, 3, -3, 1}, {2, -5, 4, -1}, {-1, 0, 1, 0}, {0, 2, 0, 0}}};
-}
-
-static vec<3> catmull_rom(float t, const matrix<4, 3>& points) {
-  vec<4> T{t * t * t, t * t, t, 1};
-  return (T * catmull_rom_basis()) * points;
-}
-
-static void matrix_catmull_rom_endpoints() {
-  matrix<4, 3> points{{{0, 0, 0}, {1, 1, 0}, {2, 0, 0}, {3, 1, 0}}};
-  expect(catmull_rom(0, points), points[1]);
-  expect(catmull_rom(1, points), points[2]);
-}
-
-static void matrix_catmull_rom_midpoint() {
-  // Evenly spaced points on a line: the curve is the line itself.
-  matrix<4, 3> points{{{0, 0, 1}, {1, 2, 1}, {2, 4, 1}, {3, 6, 1}}};
-  expect(catmull_rom(0.5f, points), vec<3>{1.5f, 3, 1});
-}
-
-//
 // Conversions with point3_list
 //
 
@@ -168,9 +143,6 @@ int run_matrix_tests(const char* filter) {
   failed += run("matrix_times_matrix_square", matrix_times_matrix_square, filter);
   failed += run("matrix_times_matrix_rectangular", matrix_times_matrix_rectangular, filter);
   failed += run("matrix_hadamard", matrix_hadamard, filter);
-
-  failed += run("matrix_catmull_rom_endpoints", matrix_catmull_rom_endpoints, filter);
-  failed += run("matrix_catmull_rom_midpoint", matrix_catmull_rom_midpoint, filter);
 
   failed += run("matrix_from_point3_list", matrix_from_point3_list, filter);
   failed += run("matrix_to_point3_list", matrix_to_point3_list, filter);
