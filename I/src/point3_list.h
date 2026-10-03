@@ -13,6 +13,8 @@ public:
   point3_list() {}
   point3_list(point3 point) { add(point); }
 
+  int length() const { return static_cast<int>(points.size()); }
+
   void clear() { points.clear(); }
 
   void add(point3 point) {

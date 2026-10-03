@@ -9,7 +9,7 @@
 inline path generate_complete_CR_spline(const float dt, const matrix<4,4>& M_CR, const point3_list& positions) {
     // Every 4 consecutive positions make one segment, from the 2nd to the 3rd of them.
     path pathPoints{};
-    int segments = (int)positions.points.size() - 3;
+    int segments = positions.length() - 3;
     for (int i = 0; i < segments; i++) {
         matrix<4, 3> controlSubset{
             fromVec3(positions.points[i]),
@@ -33,7 +33,7 @@ inline path catmull_rom_interpolate(const point3_list& controlSet, const float d
    // The last one in first position, to make camera start at P_0,
    // and the first two at last position, to make camera finish at the starting point.
 
-   int size = (int)controlSet.points.size();
+   int size = controlSet.length();
 
    point3_list positions{ controlSet.points.back() };
    positions.add(controlSet);
