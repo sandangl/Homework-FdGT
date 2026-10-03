@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Primo Homework - Computer Graphics</title>
+  <!-- KaTeX for math rendering -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"
+          onload="renderMathInElement(document.body, {
+            delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false}
+            ]
+          });"></script>
+  <!-- Highlight.js for C++ code syntax highlighting -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/cpp.min.js"></script>
+  <script>document.addEventListener('DOMContentLoaded', () => { hljs.highlightAll(); });</script>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --code-bg: #0d1117;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.65;
+      color: var(--text);
+      background-color: var(--bg);
+      padding: 2.5rem 1rem;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      padding: 3rem 3.5rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05), 0 0 0 1px var(--border);
+    }
+    h1 {
+      font-size: 2.35rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid var(--border);
+    }
+    h2 {
+      font-size: 1.65rem;
+      font-weight: 600;
+      color: #1e293b;
+      margin-top: 2.25rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 {
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: #334155;
+      margin-top: 1.75rem;
+      margin-bottom: 0.75rem;
+    }
+    h4 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #475569;
+      margin-top: 1.25rem;
+      margin-bottom: 0.5rem;
+    }
+    p {
+      margin-bottom: 1.1rem;
+    }
+    ul, ol {
+      margin-bottom: 1.25rem;
+      padding-left: 2rem;
+    }
+    li {
+      margin-bottom: 0.4rem;
+    }
+    a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 500;
+    }
+    a:hover {
+      text-decoration: underline;
+      color: var(--primary-hover);
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: 0.9em;
+      background-color: #f1f5f9;
+      color: #0f172a;
+      padding: 0.2em 0.4em;
+      border-radius: 4px;
+      border: 1px solid #e2e8f0;
+    }
+    pre {
+      margin: 1.25rem 0;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    pre code {
+      display: block;
+      padding: 1.25rem;
+      background-color: var(--code-bg);
+      color: #e6edf3;
+      border: none;
+      font-size: 0.88rem;
+      line-height: 1.5;
+      overflow-x: auto;
+    }
+    .math-display {
+      margin: 1.5rem 0;
+      text-align: center;
+      overflow-x: auto;
+      padding: 0.5rem 0;
+    }
+    .math-inline {
+      font-family: inherit;
+    }
+    .img-container {
+      text-align: center;
+      margin: 2rem 0;
+    }
+    .img-container img {
+      max-width: 100%;
+      height: auto;
+    }
+    .caption {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      font-style: italic;
+    }
+    @media (max-width: 768px) {
+      body {
+        padding: 1rem 0.5rem;
+      }
+      .container {
+        padding: 1.75rem 1.25rem;
+        border-radius: 8px;
+      }
+      h1 {
+        font-size: 1.85rem;
+      }
+      h2 {
+        font-size: 1.4rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+<h1>Homework</h1>
+
+<p>Questo progetto implementa miglioramenti per la camera:</p>
+
+<ul>
+  <li>Stereogramma ad anaglifo (difficoltà media)</li>
+  <li>Punto di vista della camera rotante (difficoltà elevata)</li>
+</ul>
+
+<h2>1. Stereogramma ad anaglifo</h2>
+
+<p>L'anaglifo rosso-ciano è implementato convertendo le viste dell'occhio sinistro e destro in scala di grigi utilizzando i pesi di luminanza dello standard PAL Nativo (0.222 R + 0.707 G + 0.071 B).</p>
+
+<p>Per comporre lo stereogramma, la luminanza dell'occhio sinistro viene assegnata esclusivamente al canale rosso, mentre la luminanza dell'occhio destro viene assegnata sia al canale verde che a quello blu (ciano). Il metodo <code>toAnaglyph()</code> esegue questo isolamento dei canali:</p>
+
+<pre><code class="language-c++">color toAnaglyph(color rayColor, bool isLeft) {
+    // Ciascun canale viene moltiplicato per una costante che simula la percezione umana del rosso, verde e blu.
+    float gray = 0.222f * rayColor[0] + 0.707f * rayColor[1] + 0.071f * rayColor[2];
+    
+    rayColor[0] = isLeft ? gray : 0.0f;
+    rayColor[1] = isLeft ? 0.0f : gray;
+    rayColor[2] = isLeft ? 0.0f : gray;
+
+    return rayColor;
+}</code></pre>
+
+<p>La pipeline di rendering suddivide il punto di vista in due posizioni della camera corrispondenti all'occhio sinistro e all'occhio destro. I due punti di vista sono separati da un offset orizzontale <code>e</code>, che rappresenta la distanza interoculare:</p>
+
+<pre><code class="language-c++">void render(const hittable&amp; world, const bool toggle_anaglyph = false, const float e = 0.0) {
+    ...
+    if (toggle_anaglyph) {
+        ray rr = get_ray(i, j, e);
+        ray rl = get_ray(i, j, -e);
+        pixel_color += toAnaglyph(ray_color(rl, world, true), true) + toAnaglyph(ray_color(rr, world, true), false);
+    }
+    ...
+}
+
+ray get_ray(int i, int j, float e = 0.0) const {
+  // Ottiene un raggio della camera campionato casualmente per il pixel in posizione i,j.
+
+  vec3 pixel_center = pixel00_loc + (i * pixel_delta_u) + (j * pixel_delta_v);
+  vec3 pixel_sample = pixel_center + pixel_sample_square();
+
+  point3 ray_origin = camera_center + 0.5 * e * pixel_delta_u;
+  vec3 ray_direction = pixel_sample - ray_origin;
+
+  return ray(ray_origin, ray_direction);
+}</code></pre>
+
+<p>Poiché <code>e</code> assume valori dotati di segno, invertendone il segno si inverte l'effetto di parallasse. Un valore positivo produce un effetto percepito di fuoriuscita dallo schermo ("pop-out"), mentre un valore negativo crea una profondità che rientra nello schermo.</p>
+
+<p>I render di esempio sono disponibili in questa cartella:</p>
+<ul>
+  <li><code>anaglyph@246px.bmp</code>: distanza interoculare umana standard (~6.5 cm, ~246 px a 1280x720)</li>
+  <li><code>anaglyph@1%.bmp</code>: effetto di profondità sottile (1% della larghezza della viewport)</li>
+  <li><code>anaglyph@5%.bmp</code>: effetto di profondità pronunciato (5% della larghezza della viewport)</li>
+  <li><code>inverted_anaglyph@246px.bmp</code>: inversione profondità, distanza interoculare umana standard (~6.5 cm, ~246 px a 1280x720)</li>
+  <li><code>inverted_anaglyph@1%.bmp</code>: inversione profondità, effetto di profondità sottile (1% della larghezza della viewport)</li>
+  <li><code>inverted_anaglyph@5%.bmp</code>: inversione profondità, effetto di profondità pronunciato (5% della larghezza della viewport)</li>
+</ul>
+
+<h2>2. Punto di vista della camera rotante</h2>
+
+<p>Per ottenere questo risultato, abbiamo implementato un sistema di camera rotante lungo una traiettoria ottenuta tramite spline di Catmull-Rom.</p>
+<p>L'implementazione si articola in tre parti distinte:</p>
+
+<h3>a. Implementazione di <code>vec</code> e <code>matrix</code></h3>
+
+<p>Al fine di ottenere la massima ottimizzazione durante l'interpolazione dei punti della spline di Catmull-Rom, proponiamo una versione basata su matrici definita come segue:</p>
+
+<p>Dato il vettore del tempo:</p>
+<div class="math-display">$$T = \begin{bmatrix}
+t^3 & t^2 & t & 1
+\end{bmatrix}$$</div>
+
+<p>il vettore dei punti di controllo:</p>
+<div class="math-display">$$P = \begin{bmatrix}
+P_0\\
+P_1\\
+P_2\\
+P_3
+\end{bmatrix}$$</div>
+
+<p>e infine la matrice di Catmull-Rom:</p>
+<div class="math-display">$$M_{CR} = {1\over2}\begin{bmatrix}
+-1 & 3 & -3 & 1 \\
+2 & -5 & 4 & -1 \\
+-1 & 0 & 1 & 0 \\
+0 & 2 & 0 & 0 \\
+\end{bmatrix}$$</div>
+
+<p>La formula della traiettoria in funzione del tempo è:</p>
+<div class="math-display">$$p(t) = T\cdot M_{CR}\cdot P$$</div>
+
+<p>Questa versione vettorizzata rende le prestazioni più veloci, poiché consente di evitare l'uso diretto di cicli for (annidati), aspetto essenziale per il nostro scopo.</p>
+<p>Per ottenere questo, abbiamo implementato <code>vec.h</code> per generalizzare <code>vec3</code> supportando N dimensioni e <code>matrix.h</code> per supportare matrici NxM, anch'essa basata sulla classe <code>vec</code>.</p>
+
+<h4>Implementazione di <code>vec.h</code></h4>
+
+<p>Abbiamo utilizzato ampiamente le <a href="https://en.cppreference.com/cpp/language/fold" target="_blank" rel="noopener"><strong>fold expression</strong></a> del C++17 per garantire prestazioni fulminee.</p>
+<p>Essendo una versione generalizzata di <code>vec3</code>, analizzeremo le differenze nella classe <code>vec</code>.</p>
+
+<h5>1. Definizione</h5>
+
+<pre><code class="language-c++">template &lt;std::size_t N&gt;
+class vec {
+public:
+  float e[N]{};
+  ...</code></pre>
+
+<p>L'aggiunta di un parametro template unsigned per la dimensione rende possibile l'allocazione della dimensione dell'array a tempo di compilazione. Per dichiarare, ad esempio, un vettore 7D: <code>vec&lt;7&gt; vec7{};</code>.</p>
+
+<h5>2. Operazioni</h5>
+
+<p>La classe fornisce la definizione per la somma tra vettori, per il prodotto vettore-vettore e scalare-vettore, oltre che per il prodotto scalare.</p>
+<p>In particolare, le somme tra vettori e i prodotti vettore-vettore adottano un meccanismo di broadcasting superficiale, scartando sempre gli elementi in eccesso dalla matrice di dimensioni maggiori.</p>
+
+<pre><code class="language-c++">vec operator-() const {
+    vec r = *this;
+    return r *= -1.0f;
+  }
+
+  template &lt;std::size_t M&gt;
+  vec&amp; operator+=(const vec&lt;M&gt;&amp; v) {
+    unrolled_add(v, std::make_index_sequence&lt;std::min(N, M)&gt;{});
+    return *this;
+  }
+
+  vec&amp; operator*=(float t) {
+    unrolled_mult(t, std::make_index_sequence&lt;N&gt;{});
+    return *this;
+  }
+
+  template &lt;std::size_t M&gt;
+  vec&amp; operator*=(const vec&lt;M&gt;&amp; v) {
+    unrolled_mult(v, std::make_index_sequence&lt;std::min(N, M)&gt;{});
+    return *this;
+  }
+
+  vec&amp; operator/=(float t) {
+    return *this *= 1 / t;
+  }
+
+  template &lt;std::size_t M&gt;
+  float dot(const vec&lt;M&gt;&amp; v) const {
+    return unrolled_dot(v, std::make_index_sequence&lt;std::min(N, M)&gt;{});
+  }</code></pre>
+
+<h5>3. Srotolamento dei cicli (Unrolling)</h5>
+
+<p>Avremmo potuto semplicemente usare cicli for; tuttavia, trattandosi di un motore grafico, le prestazioni rappresentano un obiettivo chiave. Sebbene consapevoli del fatto che questo specifico corso sia focalizzato sul rendering offline, abbiamo comunque deciso di realizzare una libreria ad alte prestazioni.</p>
+
+<p>Il loop unrolling è la pratica di espandere un ciclo in una catena sequenziale di istruzioni per eliminare l'overhead di controllo del ciclo. Nelle ultime versione di C++, possiamo ottenere l'unrolling a tempo di compilazione utilizzando le Fold Expression del C++17 combinate con <code>std::index_sequence</code>.</p>
+<p>Nell'esempio del prodotto scalare, il compilatore espande il parameter pack <code>Is...</code> in una singola espressione lineare a tempo di compilazione:</p>
+
+<pre><code class="language-c++">template &lt;std::size_t M, std::size_t... Is&gt;
+float unrolled_dot(const vec&lt;M&gt;&amp; v, std::index_sequence&lt;Is...&gt;) const {
+    return ((e[Is] * v.e[Is]) + ...);
+}</code></pre>
+
+<p>Funziona in modo identico a un pattern MapReduce:</p>
+<ul>
+  <li>Map: <code>(e[Is] * v.e[Is])</code> moltiplica gli elementi corrispondenti per ciascun indice;</li>
+  <li>Reduce: la sintassi <code>+ ...</code> (una right fold) somma tutti i risultati moltiplicati in un singolo valore scalare senza mai generare un ciclo a runtime.</li>
+</ul>
+
+<h5>4. Funzioni inline</h5>
+
+<p>Proprio come <code>vec3</code>, <code>vec</code> ottiene il suo insieme di funzioni inline sfruttando gli operatori di auto-assegnamento ridefiniti.</p>
+<p>Per esempio, definire il prodotto tra vettori inline:</p>
+<pre><code class="language-c++">template &lt;std::size_t N&gt;
+inline vec&lt;N&gt; operator*(vec&lt;N&gt; u, const vec&lt;N&gt;&amp; v) {
+  return u *= v;
+}</code></pre>
+<p>è altrettanto comodo quanto riutilizzare l'operatore ridefinito <code>*=</code>.</p>
+
+<h4>Implementazione di <code>matrix.h</code></h4>
+
+<p>La classe <code>matrix</code> sfrutta lo stesso paradigma spiegato in precedenza.</p>
+<p>Abbiamo considerato la matrice come una semplice lista di vettori riga, cosicché una matrice <span class="math-inline">$R\times C$</span> sia in realtà un array di dimensione R di <code>vec&lt;C&gt;</code>.</p>
+
+<pre><code class="language-c++">template &lt;std::size_t R, std::size_t C&gt;
+class matrix
+{
+public:
+  vec&lt;C&gt; rows[R];
+  ...</code></pre>
+
+<p>L'implementazione segue la stessa impostazione di <code>vec</code>, utilizzando helper per l'unrolling e per l'overload degli operatori.</p>
+<p>Abbiamo fornito le seguenti operazioni:</p>
+
+<ul>
+  <li>Somma di matrici della stessa dimensione</li>
+  <li>Prodotto scalare-matrice</li>
+  <li>Prodotto vettore-matrice e matrice-vettore</li>
+  <li>Prodotto matrice-matrice</li>
+  <li>Prodotto di Hadamard (solo matrici della stessa dimensione)</li>
+</ul>
+
+<p>Poiché la maggior parte di queste operazioni si riduce a operazioni vettoriali, gran parte della complessità è stata gestita a monte dalla classe <code>vec</code>.</p>
+
+<p>Nota: Catmull-Rom richiede il prodotto tra un <strong>vettore riga</strong> e una matrice. Essendo la nostra matrice strutturata naturalmente come un array di vettori riga, implementare ciò è stato immediato; un vettore riga di <span class="math-inline">$N$</span> elementi può essere semplicemente passato come <code>vec&lt;N&gt;</code> per scalare e sommare le righe della matrice. Tuttavia, osservando la nostra definizione vettore-matrice:</p>
+
+<pre><code class="language-c++">  //nota: il modificatore di accesso è privato poiché utilizzato da una funzione inline pubblica
+  template &lt;std::size_t K&gt;
+  friend matrix&lt;R, K&gt; operator*(const matrix &amp;A, const matrix&lt;C, K&gt; &amp;B) 
+  {
+    return A.unrolled_product(B, std::make_index_sequence&lt;R&gt;{});
+  }
+
+  ...
+
+  private:
+
+  template &lt;std::size_t... Is&gt;
+  vec&lt;C&gt; unrolled_vec_product(const vec&lt;R&gt; &amp;v, std::index_sequence&lt;Is...&gt;) const
+  {
+    return ((v.e[Is] * rows[Is]) + ...);
+  }</code></pre>
+
+<p>questa esegue già una combinazione lineare delle righe della matrice, cosicché eseguire:</p>
+
+<ol>
+  <li><code>matrix&lt;1,4&gt; * matrix&lt;4,5&gt;</code></li>
+  <li><code>vec&lt;4&gt; * matrix&lt;4,5&gt;</code></li>
+</ol>
+
+<p>è del tutto equivalente.</p>
+
+<h3>b. Implementazione della spline</h3>
+
+<p>Abbiamo disaccoppiato il calcolo della spline in un header file separato <code>spline.h</code>.</p>
+<p>L'idea chiave è fornire al renderer una lista di <code>point3</code>, che abbiamo definito nell'header <code>point3_list.h</code>, come punti in cui vorremmo che la nostra camera si trovi a determinati istanti temporali.</p>
+<p>Mantenendo la comodità di utilizzare <code>point3</code>, impiegato ovunque nel resto del codice, abbiamo anche bisogno di un modo per convertire un <code>point3</code> in un <code>vec&lt;3&gt;</code> per il calcolo vettorizzato della spline di Catmull-Rom. Abbiamo fornito questi metodi di conversione sia in <code>vec.h</code> che in <code>matrix.h</code>:</p>
+<pre><code class="language-c++">//vec.h
+
+inline vec&lt;3&gt; fromVec3(vec3 v3) {
+    return vec&lt;3&gt;{v3.x(), v3.y(), v3.z()};
+}
+
+inline vec3 toVec3(vec&lt;3&gt; v) {
+    return vec3(v[0], v[1], v[2]);
+}
+
+//matrix.h
+
+template &lt;std::size_t R&gt;
+inline matrix&lt;R, 3&gt; fromPoint3List(const point3_list&amp; l) {
+    matrix&lt;R, 3&gt; m{};
+    for (std::size_t i = 0; i &lt; R; i++) {
+        m.rows[i] = fromVec3(l.points.at(i));
+    }
+    return m;
+}
+
+template &lt;std::size_t R&gt;
+inline point3_list toPoint3List(const matrix&lt;R, 3&gt;&amp; m) {
+    point3_list l{};
+    for (std::size_t i = 0; i &lt; R; i++) {
+        l.add(toVec3(m.rows[i]));
+    }
+    return l;
+}</code></pre>
+
+<p>Per calcolare la spline, abbiamo usato una funzione wrapper, che prepara il vettore dei punti di controllo per ottenere un insieme coerente per ottenere una curva chiusa per la nostra camera.</p>
+
+<pre><code class="language-c++">//nota: path è un alias per point3_list
+inline path catmull_rom_interpolate(const point3_list&amp; controlSet, const float dt) {
+   int size = controlSet.length();
+
+   point3_list positions{ controlSet.points.back() };
+   positions.add(controlSet);
+   positions.add(controlSet.points[0]);
+   positions.add(controlSet.points[1 % size]);
+
+   ...</code></pre>
+
+<p>Dopodiché dichiariamo la matrice di Catmull-Rom:</p>
+
+<pre><code class="language-c++">matrix&lt;4,4&gt; M_CR = 0.5f * matrix&lt;4, 4&gt;{{{-1, 3, -3, 1}, { 2, -5, 4, -1 }, { -1, 0, 1, 0 }, { 0, 2, 0, 0 }}};</code></pre>
+
+<p>Dobbiamo anche calcolare il vettore del tempo. Per avere una traiettoria completa, il nostro vettore temporale deve essere interpolato incrementando il tempo a piccoli intervalli.</p>
+<p>Regolando il parametro <code>dt</code>, possiamo decidere la densità della traiettoria. Un valore più vicino a <span class="math-inline">$\epsilon$</span> (<code>float dt = epsilon</code>, dove <code>epsilon</code> è una costante float definita in <code>common.h</code>) significa che la nostra spline sarà più densa, mentre un valore più vicino a 1 significa che sarà più grossolana.</p>
+
+<p>Tutto è ora pronto per il calcolo della spline chiusa.</p>
+<p>Poiché stiamo considerando più di 4 punti, possiamo usare una finestra mobile di quattro punti alla volta per generare una prima spline. Quindi, facendo scorrere la finestra in avanti di un punto, calcoliamo nuovamente la spline, aggiungendo il risultato al nostro insieme risultante di punti (path), per poi far scorrere la finestra in avanti di una posizione, e così via.</p>
+
+<p>Questo avviene contestualmente sul posto (in place), all'interno di un ciclo for:</p>
+
+<pre><code class="language-c++">    ...
+    int segments = positions.length() - 3;
+    for (int i = 0; i &lt; segments; i++) {
+        matrix&lt;4, 3&gt; controlSubset{ fromVec3(positions.points[i]), fromVec3(positions.points[i + 1]), fromVec3(positions.points[i + 2]), fromVec3(positions.points[i + 3]) };
+        for (float t = 0.0f; t &lt; 1.0f; t += dt) {
+            vec&lt;4&gt; T{ t * t * t, t * t, t, 1 };
+            pathPoints.add(toVec3(T * M_CR * controlSubset));
+        }
+        pathPoints.add(toVec3(T * M_CR * controlSubset));
+    }
+    ...</code></pre>
+
+<h3>c. Movimento della camera e generazione dei frame numerati</h3>
+
+<p>Abbiamo tutto ora. Muovere la camera significa:</p>
+
+<ul>
+  <li>Calcolare la traiettoria una sola volta a densità prefissata</li>
+  <li>Ciclare attraverso ciascun punto della traiettoria</li>
+  <li>Per ciascun punto, renderizzare la scena e aggiornare la finestra</li>
+</ul>
+
+<p>Poiché dobbiamo creare un breve filmato di 10 secondi a 25 fps, dobbiamo impostare il nostro incremento temporale <code>dt</code> in base al numero di frame desiderato, tenendo conto anche del numero di segmenti. Nel nostro caso, abbiamo bisogno di 250 frame in totale:</p>
+
+<pre><code class="language-c++">point3_list camPositions;
+// Qui definiamo 6 punti, che corrispondono esattamente a 6 segmenti trattandosi di una curva chiusa.
+...
+
+float dt = (camPositions.length() * 1.0f)/250.0f;
+
+path camPath = catmull_rom_interpolate(camPositions, dt);</code></pre>
+
+<p>Dopodiché, muovere la camera consiste semplicemente nello spostare <code>cam.lookfrom</code> su ciascun punto della traiettoria.</p>
+<p>Un passaggio essenziale è reimpostare <code>camera_center</code>. Per fare ciò, abbiamo fornito un metodo helper per impostare questo campo privato.</p>
+
+<pre><code class="language-c++">for (int i = 0; i &lt; size(camPath.points); i++) {
+	point3 pos = camPath.points[i];
+	cam.lookfrom = pos;
+	cam.updateCameraPosition();
+
+  //cam.render(world, true, e);
+	cam.parallel_render(world, true, e);
+
+	SDL_RenderPresent(renderer);
+
+  // Salvataggio dei frame numerati: il rendering è troppo lento per salvare direttamente a video in tempo reale.
+  // Il filmato viene montato tramite il tool ffmpeg a framerate fisso.
+
+	stringstream s;
+	s &lt;&lt; &quot;C:\\Users\\seman\\Desktop\\Homework-FdGT\\I\\savedFrames\\&quot; &lt;&lt; i + 1 &lt;&lt; &quot;.bmp&quot;;
+	string filepath = s.str();
+
+	saveScreenshotBMP(filepath);
+}</code></pre>
+
+<p>Ottenendo 252 immagini, pari ad almeno 10 secondi di filmato.</p>
+
+<div class="img-container"><img src="./assets/animationCatmullRom@25fps.gif" alt="GIF Risultato" style="max-width: 65%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"><p class="caption">GIF Risultato</p></div>
+
+  </div>
+</body>
+</html>
