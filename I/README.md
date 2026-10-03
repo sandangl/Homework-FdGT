@@ -289,7 +289,7 @@ To calculate the spline, we used a wrapper function, which prepares the control 
 
 ```C++
 //note: path is an alias for point3_list
-inline path catmull_rom_interpolate(const point3_list& controlSet, const float t) {
+inline path catmull_rom_interpolate(const point3_list& controlSet, const float dt) {
    int size = (int)controlSet.points.size();
 
    point3_list positions{ controlSet.points.back() };
@@ -300,12 +300,14 @@ inline path catmull_rom_interpolate(const point3_list& controlSet, const float t
    ...
 ```
 
-Then we declare the time vector and Catmull-Rom matrix:
+Then we declare the Catmull-Rom matrix:
 
 ```C++
-vec<4> T{ t * t * t, t * t, t, 1 };
 matrix<4,4> M_CR = 0.5f * matrix<4, 4>{{{-1, 3, -3, 1}, { 2, -5, 4, -1 }, { -1, 0, 1, 0 }, { 0, 2, 0, 0 }}};
 ```
+
+We need to calculate the time vector as well. To have a complete trajectory, our time vector needs to be interpolated by incrementing time by small amounts.
+By tweaking the `dt` parameter, we can decide the trajectory density. A value closer to $\epsilon$ means our spline is finer, while a value closer to 1 means it's coarser.
 
 Everything is now ready for the closed spline to be calculated.
 Since we are taking into account more than 4 points, we can use a moving window of four points at a time to generate a first spline. Then, by sliding the window forward by one point, we calculate the spline again, adding the result to our resulting set of points (path), then sliding the window forward by one position, and so on.
@@ -317,6 +319,10 @@ This happens all at once in place, inside a for loop:
     int segments = (int)positions.points.size() - 3;
     for (int i = 0; i < segments; i++) {
         matrix<4, 3> controlSubset{ fromVec3(positions.points[i]), fromVec3(positions.points[i + 1]), fromVec3(positions.points[i + 2]), fromVec3(positions.points[i + 3]) };
+        for (float t = 0.0f; t < 1.0f; t += dt) {
+            vec<4> T{ t * t * t, t * t, t, 1 };
+            pathPoints.add(toVec3(T * M_CR * controlSubset));
+        }
         pathPoints.add(toVec3(T * M_CR * controlSubset));
     }
     ...
