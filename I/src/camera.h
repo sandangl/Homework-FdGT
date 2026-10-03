@@ -70,6 +70,9 @@ public:
     pixel00_loc = viewport_upper_left + 0.5f * (pixel_delta_u + pixel_delta_v);
   }
 
+  void updateCameraPosition() {
+      camera_center = lookfrom;
+  }
   
   void render(const hittable& world, const bool toggle_anaglyph = false, const float e = 0.0) {
     initialize();

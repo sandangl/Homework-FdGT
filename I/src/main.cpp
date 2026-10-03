@@ -1,13 +1,16 @@
 #include "SDL.h" 
 #include <iostream>
+#include <sstream>
 #include "common.h"
 
 #include "color.h"
 #include "hittable.h"
 #include "hittable_list.h"
+#include "point3_list.h"
 #include "geometry.h"
 #include "raster.h"
 #include "camera.h"
+#include "spline.h"
 
 using namespace std;
 
@@ -87,18 +90,48 @@ int main(int argc, char* argv[])
 	//
 	// By multiplying e by -1, the anaglyph gets inverted with an inward 3D effect.
 
-	float e = cam.image_width * 0.05;
+	float e = cam.image_width * 0.05f;
 
-	//cam.render(world, true, e);
-	cam.parallel_render(world, true, e);
+	// Interpolation points
+	//
+	// Camera path gets calculated using a Catmull-Rom spline.
+	// Given 5 points, we can regulate t parameter between 0 and 1 to regulate how dense
+	// the resulting interpolated path is, from coarser (epsilon) to finest (1);
 
-	SDL_RenderPresent(renderer);
+	point3_list camPositions;
+	camPositions.add(point3(2, 3, -4));
+	camPositions.add(point3(4, 4, -2));
+	camPositions.add(point3(4, 2, 0));
+	camPositions.add(point3(3, 3, 0));
+	camPositions.add(point3(3, 1, 2));
+	camPositions.add(point3(2, 5, 4));
+
+	float dt = (camPositions.length() * 1.0f)/250.0f;
+
+	path camPath = catmull_rom_interpolate(camPositions, dt);
 
 	SDL_Event event;
 	bool quit = false;
 
-	while (SDL_PollEvent(&event) || (!quit)) {
 
+	for (int i = 0; i < size(camPath.points); i++) {
+		point3 pos = camPath.points[i];
+		cam.lookfrom = pos;
+		cam.updateCameraPosition();
+
+		//cam.render(world, true, e);
+		cam.parallel_render(world, true, e);
+
+		SDL_RenderPresent(renderer);
+
+		stringstream s;
+		s << "C:\\Users\\seman\\Desktop\\Homework-FdGT\\I\\savedFrames\\" << i + 1 << ".bmp";
+		string filepath = s.str();
+
+		saveScreenshotBMP(filepath);
+	}
+
+	while (SDL_PollEvent(&event) || (!quit)) {
 		switch (event.type) {
 
 		case SDL_QUIT:
@@ -111,7 +144,7 @@ int main(int argc, char* argv[])
 					quit = true;
 					break;
 					// cases for other keypresses
-
+					
 				case SDLK_s:
 					saveScreenshotBMP("screenshot.bmp");
 					break;
