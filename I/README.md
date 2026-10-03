@@ -290,7 +290,7 @@ To calculate the spline, we used a wrapper function, which prepares the control 
 ```C++
 //note: path is an alias for point3_list
 inline path catmull_rom_interpolate(const point3_list& controlSet, const float dt) {
-   int size = (int)controlSet.points.size();
+   int size = controlSet.length();
 
    point3_list positions{ controlSet.points.back() };
    positions.add(controlSet);
@@ -307,7 +307,7 @@ matrix<4,4> M_CR = 0.5f * matrix<4, 4>{{{-1, 3, -3, 1}, { 2, -5, 4, -1 }, { -1, 
 ```
 
 We need to calculate the time vector as well. To have a complete trajectory, our time vector needs to be interpolated by incrementing time by small amounts.
-By tweaking the `dt` parameter, we can decide the trajectory density. A value closer to $\epsilon$ means our spline is finer, while a value closer to 1 means it's coarser.
+By tweaking the `dt` parameter, we can decide the trajectory density. A value closer to $\epsilon$ (`float dt = epsilon`, being `epsilon` a constant float value defined into `common.h`) means our spline is finer, while a value closer to 1 means it's coarser.
 
 Everything is now ready for the closed spline to be calculated.
 Since we are taking into account more than 4 points, we can use a moving window of four points at a time to generate a first spline. Then, by sliding the window forward by one point, we calculate the spline again, adding the result to our resulting set of points (path), then sliding the window forward by one position, and so on.
@@ -316,7 +316,7 @@ This happens all at once in place, inside a for loop:
 
 ```C++
     ...
-    int segments = (int)positions.points.size() - 3;
+    int segments = positions.length() - 3;
     for (int i = 0; i < segments; i++) {
         matrix<4, 3> controlSubset{ fromVec3(positions.points[i]), fromVec3(positions.points[i + 1]), fromVec3(positions.points[i + 2]), fromVec3(positions.points[i + 3]) };
         for (float t = 0.0f; t < 1.0f; t += dt) {
@@ -330,7 +330,52 @@ This happens all at once in place, inside a for loop:
 
 ### c. Moving the camera and generating the numbered frames
 
+We got everything now. Moving the camera means:
+
+- Calculating the trajectory once at fixed density
+- Cycling through each point of the trajectory
+- For each point, render the scene and updating the window
+
+Since we need to create a short footage of 10 seconds at 25 fps, we need to set our time increment `dt` based on the number of frame we want, by taking in account the number of segments as well. In our case, we need 250 frames in total:
+
+```C++
+point3_list camPositions;
+// Here we define 6 points, which is exactly 6 segments because it's a closed curve.
 ...
+
+float dt = (camPositions.length() * 1.0f)/250.0f;
+
+path camPath = catmull_rom_interpolate(camPositions, dt);
+```
+
+Then, moving the camera means just moving `cam.lookfrom` to each point of the trajectory.
+An essential step is to set again `camera_center`. To do that, we provided an helper method to set this private field.
+
+```C++
+for (int i = 0; i < size(camPath.points); i++) {
+	point3 pos = camPath.points[i];
+	cam.lookfrom = pos;
+	cam.updateCameraPosition();
+
+  //cam.render(world, true, e);
+	cam.parallel_render(world, true, e);
+
+	SDL_RenderPresent(renderer);
+
+  // Saving the numbered frames: the rendering is too slow to save directly.
+  // Footage gets mounted using ffmpeg tool with fixed framerate.
+
+	stringstream s;
+	s << "C:\\Users\\seman\\Desktop\\Homework-FdGT\\I\\savedFrames\\" << i + 1 << ".bmp";
+	string filepath = s.str();
+
+	saveScreenshotBMP(filepath);
+}
+```
+
+Ending up with 252 images, which is at least 10 seconds of footage.
+
+![Result gif](../assets/animationCatmullRom@25fps.gif){ .image25percent }
 
 ### 3. Extra Achievements
 
