@@ -4,7 +4,8 @@ Cosa ho implementato:
       - 1% del viewport
       - 5% del viewport
       - 6.5 cm (distanza interoculare umana) -> 245px @ 1280x720
-     La distanza è comunque impostabile liberamente
+     ripetendo la dimostrazione per gli stessi valori cambiati di segno.
+     La distanza è comunque impostabile liberamente, ammettendo altri possibili valori.
 
    - Animazione della camera seguendo una spline di Catmull-Rom. Per generarla ho dovuto implementare anche:
      - Libreria point3_list.h per gestire una lista di punti (point3, ossia vec3)
@@ -14,6 +15,14 @@ Cosa ho implementato:
      - Libreria spline.h che fornisce le funzioni inline di calcolo per la spline di Catmull-Rom
      Le librerie per gestire matrici e vettori consentono il calcolo matriciale, che ho scelto per implementare una versione vettorizzata e veloce dell'interpolazione secondo Catmull-Rom.
      Il codice per generare i frame numerati sfrutta la funzionalità di screenshot, salvando ogni frame generato per ciascun punto della spline, il cui numero è stato calcolato in base alla durata e al framerate desiderato. Questa porzione di codice si trova direttamente in main.cpp
+
+     Tramite il parametro dt si imposta la densità dei punti della spline. Dato che la curva è chiusa, per generare un video di almeno 250 frame (10 secondi a 25 fps), dt è di default pari a (num_segmenti * 1)/250.
+
+   - Configurazione a caldo
+     - È possibile muovere la camera attraverso le shortcut vim (hjkl) sul piano xz, e attraverso i tasti ,. per l'asse y.
+     - Tramite il pulsante a è possibile abilitare o disabilitare l'anaglifo
+     - Tramite il tasto r è possibile abilitare o disabilitare la cattura dei frame durante l'animazione
+     - Tramite il tasto spazio è possibile abilitare o disabilitare l'animazione
 
 Cosa non funziona:
 
