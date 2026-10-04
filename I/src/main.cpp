@@ -123,7 +123,7 @@ int main(int argc, char* argv[])
 				if (frame_index > camPath.points.size() - 1) {
 					frame_index = 0;
 					if (enable_recording) {
-						cout << "Recording complete.";
+						cout << "Recording complete." << endl;
 						enable_recording = false;
 					}
 				}
