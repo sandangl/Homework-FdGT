@@ -375,7 +375,7 @@ for (int i = 0; i < size(camPath.points); i++) {
 
 Ending up with 252 images, which is at least 10 seconds of footage.
 
-![Result GIF](./assets/animationCatmullRom@25fps.gif)
+![Result GIF](../assets/animationCatmullRom@25fps.gif)
 
 
 ### 3. Extra Achievements
