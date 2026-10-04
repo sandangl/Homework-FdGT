@@ -46,7 +46,25 @@ void close() {
 	SDL_Quit();
 }
 
+void animateCamera(const hittable& world, const camera& cam, const path& camPath, const bool& toggle_anaglyph, const bool& is_rendering, const float e) {
+ for (int i = 0; i < size(camPath.points); i++) {
+		point3 pos = camPath.points[i];
+		cam.lookfrom = pos;
+		cam.updateCameraPosition();
 
+		//cam.render(world, true, e);
+		cam.parallel_render(world, toggle_anaglyph, e);
+
+		SDL_RenderPresent(renderer);
+
+		stringstream s;
+		s << "../savedFrames/" << i + 1 << ".bmp";
+		string filepath = s.str();
+
+		saveScreenshotBMP(filepath);
+	}
+ is_rendering = false;
+}
 
 int main(int argc, char* argv[])
 {
@@ -63,7 +81,6 @@ int main(int argc, char* argv[])
 	world.add(make_shared<sphere>(point3(0.3f, 2.4f, 3.5f), 0.5f));
 	world.add(make_shared<sphere>(point3(-2.5f, 0.2f, -3.0f), 0.7f));
 	world.add(make_shared<sphere>(point3(-3.5f, -0.5f, -3.0f), 0.5f));
-
 
 	camera cam;
 	cam.aspect_ratio = 16.0f / 9.0f;
@@ -90,7 +107,7 @@ int main(int argc, char* argv[])
 	//
 	// By multiplying e by -1, the anaglyph gets inverted with an inward 3D effect.
 
-	float e = cam.image_width * 0.05f;
+	const float e = cam.image_width * 0.05f;
 
 	// Interpolation points
 	//
@@ -111,45 +128,108 @@ int main(int argc, char* argv[])
 	path camPath = catmull_rom_interpolate(camPositions, dt);
 
 	SDL_Event event;
+	bool rendered = false;
+	bool is_rendering = false;
+	bool toggle_animation = false;
+	bool toggle_anaglyph = true;
+	float current_e = e;
 	bool quit = false;
 
-
-	for (int i = 0; i < size(camPath.points); i++) {
-		point3 pos = camPath.points[i];
-		cam.lookfrom = pos;
-		cam.updateCameraPosition();
-
-		//cam.render(world, true, e);
-		cam.parallel_render(world, true, e);
-
-		SDL_RenderPresent(renderer);
-
-		stringstream s;
-		s << "C:\\Users\\seman\\Desktop\\Homework-FdGT\\I\\savedFrames\\" << i + 1 << ".bmp";
-		string filepath = s.str();
-
-		saveScreenshotBMP(filepath);
-	}
-
 	while (SDL_PollEvent(&event) || (!quit)) {
-		switch (event.type) {
 
-		case SDL_QUIT:
-			quit = true;
-			break;
-
-		case SDL_KEYDOWN:
-			switch (event.key.keysym.sym) {
-				case SDLK_ESCAPE:
-					quit = true;
-					break;
-					// cases for other keypresses
-					
-				case SDLK_s:
-					saveScreenshotBMP("screenshot.bmp");
-					break;
+		if(!rendered) {
+			if (toggle_animation) {
+				// Call animateCamera on a separate thread, so we keep control here.
+				is_rendering = true;
+			}
+			else {
+				cam.parallel_render(world, toggle_anaglyph, current_e);
+				SDL_RenderPresent(renderer);
+				rendered = true;
 			}
 		}
+
+		switch (event.type) {
+
+			case SDL_QUIT:
+				quit = true;
+				break;
+
+			case SDL_KEYDOWN:
+				switch (event.key.keysym.sym) {
+					case SDLK_ESCAPE:
+						quit = true;
+						break;
+				
+					// cases for other keypresses
+					
+					case SDLK_s:
+						saveScreenshotBMP("screenshot.bmp");
+						break;
+
+					case SDLK_a:
+						current_e = toggle_anaglyph ? 0 : e;
+						toggle_anaglyph = !toggle_anaglyph;
+						rendered = false;
+						break;
+
+					case SDLK_SPACE:
+						if (!is_rendering) {
+							toggle_animation = !toggle_animation;
+							rendered = false;
+						}
+						break;
+
+					case SDLK_UP:
+						if (!is_rendering) {
+							cam.lookfrom += vec3(0.0f, 0.0f, 0.5f);
+							cam.updateCameraPosition();
+							rendered = false;
+						}
+						break;
+
+					case SDLK_DOWN:
+						if (!is_rendering) {
+							cam.lookfrom += vec3(0.0f, 0.0f, -0.5f);
+							cam.updateCameraPosition();
+							rendered = false;
+						}
+						break;
+
+					case SDLK_LEFT:
+						if (!is_rendering) {
+							cam.lookfrom += vec3(-0.5f, 0.0f, 0.0f);
+							cam.updateCameraPosition();
+							rendered = false;
+						}
+						break;
+
+					case SDLK_RIGHT:
+						if (!is_rendering) {
+							cam.lookfrom += vec3(0.5f, 0.0f, 0.0f);
+							cam.updateCameraPosition();
+							rendered = false;
+						}
+						break;
+
+					case SDLK_PLUS:
+						if (!is_rendering) {
+							cam.lookfrom += vec3(0.0f, 0.5f, 0.0f);
+							cam.updateCameraPosition();
+							rendered = false;
+						}
+						break;
+
+					case SDLK_MINUS:
+						if (!is_rendering) {
+							cam.lookfrom += vec3(0.0f, -0.5f, 0.0f);
+							cam.updateCameraPosition();
+							rendered = false;
+						}
+						break;
+
+				}
+			}
 	}
 
 	close();
