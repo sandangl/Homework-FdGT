@@ -1,4 +1,5 @@
 #pragma once
+#include <sstream>
 #include "SDL.h"
 
 SDL_Window* window;
@@ -61,4 +62,12 @@ bool saveScreenshotBMP(std::string filepath, SDL_Window* SDLWindow = window, SDL
 	}
 	std::cout << "Image saved." << "\n";
 	return true;
+}
+
+void saveCurrentFrame(int i) {
+	std::stringstream s;
+	s << "..\\..\\..\\savedFrames\\" << i + 1 << ".bmp";
+	std::string filepath = s.str();
+
+	saveScreenshotBMP(filepath);
 }

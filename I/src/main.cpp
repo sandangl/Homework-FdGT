@@ -1,8 +1,7 @@
 #include "SDL.h" 
 #include <iostream>
-#include <sstream>
-#include "common.h"
 
+#include "common.h"
 #include "color.h"
 #include "hittable.h"
 #include "hittable_list.h"
@@ -44,26 +43,6 @@ void close() {
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
 	SDL_Quit();
-}
-
-void animateCamera(const hittable& world, const camera& cam, const path& camPath, const bool& toggle_anaglyph, const bool& is_rendering, const float e) {
- for (int i = 0; i < size(camPath.points); i++) {
-		point3 pos = camPath.points[i];
-		cam.lookfrom = pos;
-		cam.updateCameraPosition();
-
-		//cam.render(world, true, e);
-		cam.parallel_render(world, toggle_anaglyph, e);
-
-		SDL_RenderPresent(renderer);
-
-		stringstream s;
-		s << "../savedFrames/" << i + 1 << ".bmp";
-		string filepath = s.str();
-
-		saveScreenshotBMP(filepath);
-	}
- is_rendering = false;
 }
 
 int main(int argc, char* argv[])
@@ -128,10 +107,12 @@ int main(int argc, char* argv[])
 	path camPath = catmull_rom_interpolate(camPositions, dt);
 
 	SDL_Event event;
+	int frame_index = 0;
 	bool rendered = false;
 	bool is_rendering = false;
 	bool toggle_animation = false;
 	bool toggle_anaglyph = true;
+	bool enable_recording = true;
 	float current_e = e;
 	bool quit = false;
 
@@ -139,8 +120,21 @@ int main(int argc, char* argv[])
 
 		if(!rendered) {
 			if (toggle_animation) {
-				// Call animateCamera on a separate thread, so we keep control here.
-				is_rendering = true;
+				if (frame_index > camPath.points.size() - 1) {
+					frame_index = 0;
+					if (enable_recording) {
+						cout << "Recording complete.";
+						enable_recording = false;
+					}
+				}
+				cam.lookfrom = camPath.points.at(frame_index);
+				cam.updateCameraPosition();
+				cam.parallel_render(world, toggle_anaglyph, e);
+				SDL_RenderPresent(renderer);
+				if (enable_recording) {
+					saveCurrentFrame(frame_index);
+				}
+				frame_index++;
 			}
 			else {
 				cam.parallel_render(world, toggle_anaglyph, current_e);
@@ -173,14 +167,19 @@ int main(int argc, char* argv[])
 						rendered = false;
 						break;
 
-					case SDLK_SPACE:
-						if (!is_rendering) {
-							toggle_animation = !toggle_animation;
-							rendered = false;
-						}
+					case SDLK_r:
+						enable_recording = !enable_recording;
+						cout << (enable_recording ? "Auto frame saving enabled." : "Auto frame saving disabled.") << endl;
 						break;
 
-					case SDLK_UP:
+					case SDLK_SPACE:
+						frame_index = 0;
+						toggle_animation = !toggle_animation;
+						is_rendering = !is_rendering;
+						rendered = false;
+						break;
+
+					case SDLK_h:
 						if (!is_rendering) {
 							cam.lookfrom += vec3(0.0f, 0.0f, 0.5f);
 							cam.updateCameraPosition();
@@ -188,7 +187,7 @@ int main(int argc, char* argv[])
 						}
 						break;
 
-					case SDLK_DOWN:
+					case SDLK_j:
 						if (!is_rendering) {
 							cam.lookfrom += vec3(0.0f, 0.0f, -0.5f);
 							cam.updateCameraPosition();
@@ -196,15 +195,7 @@ int main(int argc, char* argv[])
 						}
 						break;
 
-					case SDLK_LEFT:
-						if (!is_rendering) {
-							cam.lookfrom += vec3(-0.5f, 0.0f, 0.0f);
-							cam.updateCameraPosition();
-							rendered = false;
-						}
-						break;
-
-					case SDLK_RIGHT:
+					case SDLK_k:
 						if (!is_rendering) {
 							cam.lookfrom += vec3(0.5f, 0.0f, 0.0f);
 							cam.updateCameraPosition();
@@ -212,7 +203,15 @@ int main(int argc, char* argv[])
 						}
 						break;
 
-					case SDLK_PLUS:
+					case SDLK_l:
+						if (!is_rendering) {
+							cam.lookfrom += vec3(-0.5f, 0.0f, 0.0f);
+							cam.updateCameraPosition();
+							rendered = false;
+						}
+						break;
+
+					case SDLK_COMMA:
 						if (!is_rendering) {
 							cam.lookfrom += vec3(0.0f, 0.5f, 0.0f);
 							cam.updateCameraPosition();
@@ -220,7 +219,7 @@ int main(int argc, char* argv[])
 						}
 						break;
 
-					case SDLK_MINUS:
+					case SDLK_PERIOD:
 						if (!is_rendering) {
 							cam.lookfrom += vec3(0.0f, -0.5f, 0.0f);
 							cam.updateCameraPosition();
