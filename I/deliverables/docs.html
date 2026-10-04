@@ -514,7 +514,99 @@ path camPath = catmull_rom_interpolate(camPositions, dt);</code></pre>
 
 <p>Ottenendo 252 immagini, pari ad almeno 10 secondi di filmato.</p>
 
-<div class="img-container"><img src="./assets/animationCatmullRom@25fps.gif" alt="GIF Risultato" style="max-width: 65%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"><p class="caption">GIF Risultato</p></div>
+<h3>3. Funzionalità Extra</h3>
+
+<p>Queste sono le funzionalità aggiuntive introdotte nel progetto:</p>
+
+<h4>Rendering non bloccante dell'animazione</h4>
+
+<p>Avevamo bisogno di un modo per mantenere il thread principale in ascolto degli eventi durante il rendering dell'animazione. Trattandosi di un ciclo <code>for</code> bloccante, era necessaria una soluzione non bloccante. Inizialmente abbiamo valutato l'utilizzo di un thread separato per il rendering dell'animazione; tuttavia, non essendo <code>SDL_Renderer</code> thread-safe, saremmo andati incontro al rischio di race condition. Di conseguenza, abbiamo evitato del tutto il ciclo for, renderizzando un frame alla volta e gestendo gli eventi all'interno del loop principale:</p>
+
+<pre><code class="language-c++">SDL_Event event;
+int frame_index = 0;
+while (SDL_PollEvent(&amp;event) || (!quit)) {
+
+	if(!rendered) {
+		if (toggle_animation) {
+			// Fa sì che l'animazione continui in loop fino a interruzione esplicita da parte dell'utente
+			if (frame_index &gt; camPath.points.size() - 1) {
+				frame_index = 0; 
+				if (enable_recording) {
+					// Al termine di un ciclo completo, interrompe la registrazione automatica dei frame
+					cout &lt;&lt; "Recording complete."; 
+					enable_recording = false;
+				}
+			}
+			cam.lookfrom = camPath.points.at(frame_index);
+			cam.updateCameraPosition();
+			cam.parallel_render(world, toggle_anaglyph, e);
+			SDL_RenderPresent(renderer);
+			if (enable_recording) {
+				saveCurrentFrame(frame_index);
+			}
+			frame_index++;
+		}
+		else {
+			cam.parallel_render(world, toggle_anaglyph, current_e);
+			SDL_RenderPresent(renderer);
+			rendered = true;
+		}
+	}
+
+	switch (event.type) {
+		// Gestione eventi da tastiera
+		...
+	}
+}</code></pre>
+
+<h4>Tasti funzione</h4>
+
+<p>Oltre al salvataggio degli screenshot, abbiamo introdotto l'attivazione/disattivazione dell'animazione, dell'anaglifo e del salvataggio automatico delle immagini dei singoli frame (durante la riproduzione dell'animazione):</p>
+
+<pre><code class="language-c++">// Flag di controllo per i tasti funzione
+int frame_index = 0;
+bool rendered = false;
+bool is_rendering = false;
+bool toggle_animation = false;
+bool toggle_anaglyph = true;
+bool enable_recording = true;
+float current_e = e;
+bool quit = false;
+
+switch (event.key.keysym.sym) {
+  ...
+  case SDLK_a:
+    current_e = toggle_anaglyph ? 0 : e;
+    toggle_anaglyph = !toggle_anaglyph;
+    rendered = false;
+    break;
+
+  case SDLK_r:
+    enable_recording = !enable_recording;
+    cout &lt;&lt; (enable_recording ? "Auto frame saving enabled." : "Auto frame saving disabled.") &lt;&lt; endl;
+    break;
+
+  case SDLK_SPACE:
+    frame_index = 0;
+    toggle_animation = !toggle_animation;
+    is_rendering = !is_rendering;
+    rendered = false;
+    break;
+  ...
+}</code></pre>
+
+<h4>Controlli della camera</h4>
+
+<p>Abbiamo aggiunto mappature da tastiera per sommare vettori a <code>cam.lookfrom</code>:</p>
+
+<ul>
+  <li><code>h</code>: sposta la camera in avanti (aggiunge <span class="math-inline">$\left[0,0,0.5\right]$</span>)</li>
+  <li><code>j</code>: sposta la camera all'indietro (aggiunge <span class="math-inline">$\left[0,0,-0.5\right]$</span>)</li>
+  <li><code>k</code>: sposta la camera a sinistra (aggiunge <span class="math-inline">$\left[0.5,0,0\right]$</span>)</li>
+  <li><code>l</code>: sposta la camera a destra (aggiunge <span class="math-inline">$\left[-0.5,0,0\right]$</span>)</li>
+  <li>tasto <code>,</code>: sposta la camera verso l'alto (aggiunge <span class="math-inline">$\left[0,0.5,0\right]$</span>)</li>
+  <li>tasto <code>.</code>: sposta la camera verso il basso (aggiunge <span class="math-inline">$\left[0,-0.5,0\right]$</span>)</li>
+</ul>
 
   </div>
 </body>
