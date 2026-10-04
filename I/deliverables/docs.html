@@ -178,7 +178,7 @@
 
 <h2>1. Stereogramma ad anaglifo</h2>
 
-<p>L'anaglifo rosso-ciano è implementato convertendo le viste dell'occhio sinistro e destro in scala di grigi utilizzando i pesi di luminanza dello standard PAL Nativo (0.222 R + 0.707 G + 0.071 B).</p>
+<p>L'anaglifo rosso-ciano è stato implementato convertendo le viste dell'occhio sinistro e destro in scala di grigi utilizzando i pesi di luminanza dello standard PAL Nativo  <span class="math-inline">$(0.222 R + 0.707 G + 0.071 B)$</span>.</p>
 
 <p>Per comporre lo stereogramma, la luminanza dell'occhio sinistro viene assegnata esclusivamente al canale rosso, mentre la luminanza dell'occhio destro viene assegnata sia al canale verde che a quello blu (ciano). Il metodo <code>toAnaglyph()</code> esegue questo isolamento dei canali:</p>
 
@@ -217,21 +217,21 @@ ray get_ray(int i, int j, float e = 0.0) const {
   return ray(ray_origin, ray_direction);
 }</code></pre>
 
-<p>Poiché <code>e</code> assume valori dotati di segno, invertendone il segno si inverte l'effetto di parallasse. Un valore positivo produce un effetto percepito di fuoriuscita dallo schermo ("pop-out"), mentre un valore negativo crea una profondità che rientra nello schermo.</p>
+<p>Poiché <code>e</code> assume valori dotati di segno, invertendone il segno si inverte anche l'effetto di parallasse (dal momento che le due camere vengono scambiate di posizione). Un valore positivo produce un effetto percepito di fuoriuscita dallo schermo (normale), mentre un valore negativo crea una profondità che rientra nello schermo.</p>
 
 <p>I render di esempio sono disponibili in questa cartella:</p>
 <ul>
-  <li><code>anaglyph@246px.bmp</code>: distanza interoculare umana standard (~6.5 cm, ~246 px a 1280x720)</li>
-  <li><code>anaglyph@1%.bmp</code>: effetto di profondità sottile (1% della larghezza della viewport)</li>
+  <li><code>anaglyph@246px.bmp</code>: distanza interoculare umana standard (6.5 cm, ~246 px a 1280x720)</li>
+  <li><code>anaglyph@1%.bmp</code>: effetto di profondità modesto (1% della larghezza della viewport)</li>
   <li><code>anaglyph@5%.bmp</code>: effetto di profondità pronunciato (5% della larghezza della viewport)</li>
-  <li><code>inverted_anaglyph@246px.bmp</code>: inversione profondità, distanza interoculare umana standard (~6.5 cm, ~246 px a 1280x720)</li>
-  <li><code>inverted_anaglyph@1%.bmp</code>: inversione profondità, effetto di profondità sottile (1% della larghezza della viewport)</li>
-  <li><code>inverted_anaglyph@5%.bmp</code>: inversione profondità, effetto di profondità pronunciato (5% della larghezza della viewport)</li>
+  <li><code>inverted_anaglyph@246px.bmp</code>: inversione profondità, distanza interoculare umana standard</li>
+  <li><code>inverted_anaglyph@1%.bmp</code>: inversione profondità, effetto di profondità modesto</li>
+  <li><code>inverted_anaglyph@5%.bmp</code>: inversione profondità, effetto di profondità pronunciato</li>
 </ul>
 
 <h2>2. Punto di vista della camera rotante</h2>
 
-<p>Per ottenere questo risultato, abbiamo implementato un sistema di camera rotante lungo una traiettoria ottenuta tramite spline di Catmull-Rom.</p>
+<p>Per ottenere questo risultato, abbiamo implementato un sistema di camera rotante lungo una traiettoria ottenuta tramite spline di Catmull-Rom. <code>lookat</code> viene mantenuto fisso, spostando invece <code>lookfrom</code>.</p>
 <p>L'implementazione si articola in tre parti distinte:</p>
 
 <h3>a. Implementazione di <code>vec</code> e <code>matrix</code></h3>
@@ -282,8 +282,8 @@ public:
 
 <h5>2. Operazioni</h5>
 
-<p>La classe fornisce la definizione per la somma tra vettori, per il prodotto vettore-vettore e scalare-vettore, oltre che per il prodotto scalare.</p>
-<p>In particolare, le somme tra vettori e i prodotti vettore-vettore adottano un meccanismo di broadcasting superficiale, scartando sempre gli elementi in eccesso dalla matrice di dimensioni maggiori.</p>
+<p>La classe fornisce la definizione per la somma tra vettori, il prodotto vettoriale, il prodotto di uno scalare per un vettore e il prodotto scalare.</p>
+<p>In particolare, le somme tra vettori e i prodotti vettoriali adottano un meccanismo di broadcasting superficiale, scartando sempre gli elementi in eccesso dalla matrice di dimensioni maggiori.</p>
 
 <pre><code class="language-c++">vec operator-() const {
     vec r = *this;
@@ -318,7 +318,7 @@ public:
 
 <h5>3. Srotolamento dei cicli (Unrolling)</h5>
 
-<p>Avremmo potuto semplicemente usare cicli for; tuttavia, trattandosi di un motore grafico, le prestazioni rappresentano un obiettivo chiave. Sebbene consapevoli del fatto che questo specifico corso sia focalizzato sul rendering offline, abbiamo comunque deciso di realizzare una libreria ad alte prestazioni.</p>
+<p>Avremmo potuto semplicemente usare cicli for; tuttavia, trattandosi di un motore grafico, ottenere buone prestazioni rappresentano un obiettivo desiderabile. Sebbene consapevoli del fatto che questo specifico corso sia focalizzato sul rendering offline, abbiamo comunque deciso di realizzare una libreria ad alte prestazioni.</p>
 
 <p>Il loop unrolling è la pratica di espandere un ciclo in una catena sequenziale di istruzioni per eliminare l'overhead di controllo del ciclo. Nelle ultime versione di C++, possiamo ottenere l'unrolling a tempo di compilazione utilizzando le Fold Expression del C++17 combinate con <code>std::index_sequence</code>.</p>
 <p>Nell'esempio del prodotto scalare, il compilatore espande il parameter pack <code>Is...</code> in una singola espressione lineare a tempo di compilazione:</p>
@@ -330,8 +330,8 @@ float unrolled_dot(const vec&lt;M&gt;&amp; v, std::index_sequence&lt;Is...&gt;) 
 
 <p>Funziona in modo identico a un pattern MapReduce:</p>
 <ul>
-  <li>Map: <code>(e[Is] * v.e[Is])</code> moltiplica gli elementi corrispondenti per ciascun indice;</li>
-  <li>Reduce: la sintassi <code>+ ...</code> (una right fold) somma tutti i risultati moltiplicati in un singolo valore scalare senza mai generare un ciclo a runtime.</li>
+  <li><strong>Map</strong>: <code>(e[Is] * v.e[Is])</code> moltiplica gli elementi corrispondenti per ciascun indice;</li>
+  <li><strong>Reduce</strong>: la sintassi <code>+ ...</code> (una right fold) somma tutti i risultati moltiplicati in un singolo valore scalare senza mai generare un ciclo a runtime.</li>
 </ul>
 
 <h5>4. Funzioni inline</h5>
@@ -371,7 +371,7 @@ public:
 
 <p>Nota: Catmull-Rom richiede il prodotto tra un <strong>vettore riga</strong> e una matrice. Essendo la nostra matrice strutturata naturalmente come un array di vettori riga, implementare ciò è stato immediato; un vettore riga di <span class="math-inline">$N$</span> elementi può essere semplicemente passato come <code>vec&lt;N&gt;</code> per scalare e sommare le righe della matrice. Tuttavia, osservando la nostra definizione vettore-matrice:</p>
 
-<pre><code class="language-c++">  //nota: il modificatore di accesso è privato poiché utilizzato da una funzione inline pubblica
+<pre><code class="language-c++">  //nota: il modificatore di accesso è friendly poiché utilizzato da una funzione inline pubblica
   template &lt;std::size_t K&gt;
   friend matrix&lt;R, K&gt; operator*(const matrix &amp;A, const matrix&lt;C, K&gt; &amp;B) 
   {
@@ -490,7 +490,7 @@ float dt = (camPositions.length() * 1.0f)/250.0f;
 path camPath = catmull_rom_interpolate(camPositions, dt);</code></pre>
 
 <p>Dopodiché, muovere la camera consiste semplicemente nello spostare <code>cam.lookfrom</code> su ciascun punto della traiettoria.</p>
-<p>Un passaggio essenziale è reimpostare <code>camera_center</code>. Per fare ciò, abbiamo fornito un metodo helper per impostare questo campo privato.</p>
+<p>Un passaggio essenziale è reimpostare <code>camera_center</code> per farlo coincidere con <code>lookfrom</code>. Per fare ciò, abbiamo fornito un metodo helper per impostare questo campo privato.</p>
 
 <pre><code class="language-c++">for (int i = 0; i &lt; size(camPath.points); i++) {
 	point3 pos = camPath.points[i];
@@ -520,7 +520,7 @@ path camPath = catmull_rom_interpolate(camPositions, dt);</code></pre>
 
 <h4>Rendering non bloccante dell'animazione</h4>
 
-<p>Avevamo bisogno di un modo per mantenere il thread principale in ascolto degli eventi durante il rendering dell'animazione. Trattandosi di un ciclo <code>for</code> bloccante, era necessaria una soluzione non bloccante. Inizialmente abbiamo valutato l'utilizzo di un thread separato per il rendering dell'animazione; tuttavia, non essendo <code>SDL_Renderer</code> thread-safe, saremmo andati incontro al rischio di race condition. Di conseguenza, abbiamo evitato del tutto il ciclo for, renderizzando un frame alla volta e gestendo gli eventi all'interno del loop principale:</p>
+<p>Avevamo bisogno di un modo per mantenere il thread principale in ascolto degli eventi durante il rendering dell'animazione. Trattandosi di un ciclo <code>for</code> bloccante, era necessaria una soluzione che, invece, non fosse bloccante. Inizialmente abbiamo valutato l'utilizzo di un thread separato per il rendering dell'animazione; tuttavia, non essendo <code>SDL_Renderer</code> thread-safe, saremmo andati incontro al rischio di race condition. Di conseguenza, abbiamo evitato del tutto il ciclo for, renderizzando un frame alla volta e gestendo gli eventi all'interno del loop principale:</p>
 
 <pre><code class="language-c++">SDL_Event event;
 int frame_index = 0;

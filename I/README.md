@@ -223,7 +223,7 @@ Note: Catmull-Rom needs a **row vector** by matrix product. Since our matrix is 
 
 ```C++
 
-  //note: the accessor is private since is used by a public inline function
+  //note: the accessor is friendly since is used by a public inline function
   template <std::size_t K>
   friend matrix<R, K> operator*(const matrix &A, const matrix<C, K> &B) 
   {
