@@ -375,8 +375,104 @@ for (int i = 0; i < size(camPath.points); i++) {
 
 Ending up with 252 images, which is at least 10 seconds of footage.
 
-![Result gif](../assets/animationCatmullRom@25fps.gif){ .image25percent }
+![Result GIF](./assets/animationCatmullRom@25fps.gif)
+
 
 ### 3. Extra Achievements
 
-Add juicy docs.
+These are extra features we brought into the project as an extra:
+
+#### Unblocking animation rendering
+
+We need a way to keep main thread listening to events whilst rendering the animation.
+Since the animation happen in for loop, which is blocking, we needed an unblocking solution.
+We first thought of using a completely separated thread for animation rendering; however, being `SDLRenderer` non-thread safe, we would have faced a race condition risk.
+So, we decided to not use a for loop at all, by rendering each frame and then listening to events inside the main loop:
+
+```C++
+SDL_Event event;
+int frame_index = 0;
+while (SDL_PollEvent(&event) || (!quit)) {
+
+	if(!rendered) {
+		if (toggle_animation) {
+      // Ensure animation keep looping until explicit stopping by the user
+			if (frame_index > camPath.points.size() - 1) {
+				frame_index = 0; 
+				if (enable_recording) {
+          // When a cycle has completed, no need to keep recording frames 
+					cout << "Recording complete."; 
+					enable_recording = false;
+				}
+			}
+			cam.lookfrom = camPath.points.at(frame_index);
+			cam.updateCameraPosition();
+			cam.parallel_render(world, toggle_anaglyph, e);
+			SDL_RenderPresent(renderer);
+			if (enable_recording) {
+				saveCurrentFrame(frame_index);
+			}
+			frame_index++;
+		}
+		else {
+			cam.parallel_render(world, toggle_anaglyph, current_e);
+			SDL_RenderPresent(renderer);
+			rendered = true;
+		}
+	}
+
+	switch (event.type) {
+    // Manage keyboard events here
+    ...
+  }
+}
+```
+
+#### Function keys
+
+Aside screenshots, we also brought animation toggling, anaglyph toggling and auto frame image saving toggling (during animation rendering) as well.
+
+```C++
+// Flags for function keys control
+int frame_index = 0;
+bool rendered = false;
+bool is_rendering = false;
+bool toggle_animation = false;
+bool toggle_anaglyph = true;
+bool enable_recording = true;
+float current_e = e;
+bool quit = false;
+
+switch {
+  ...
+  case SDLK_a:
+    current_e = toggle_anaglyph ? 0 : e;
+    toggle_anaglyph = !toggle_anaglyph;
+    rendered = false;
+    break;
+
+  case SDLK_r:
+    enable_recording = !enable_recording;
+    cout << (enable_recording ? "Auto frame saving enabled." : "Auto frame saving disabled.") << endl;
+    break;
+
+  case SDLK_SPACE:
+    frame_index = 0;
+    toggle_animation = !toggle_animation;
+    is_rendering = !is_rendering;
+    rendered = false;
+    break;
+  ...
+}
+```
+
+#### Camera controls
+
+We added keymappings to add vectors to `cam.viewfrom`:
+
+- `h`: moves camera forward (adds $\left[0,0,0.5\right]$) 
+- `j`: moves camera backwards (adds $\left[0,0,-0.5\right]$) 
+- `k`: moves camera left (adds $\left[0.5,0, 0\right]$) 
+- `l`: moves camera right (adds $\left[-0.5,0,0\right]$) 
+- `,` key: moves camera up (adds $\left[0,0.5,0\right]$) 
+- `.` key: moves camera down (adds $\left[0,-0.5,0\right]$) 
