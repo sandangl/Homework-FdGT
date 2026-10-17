@@ -12,11 +12,10 @@ fi
 PROJECT="$1"
 ARCHIVE="$2"
 
-ROOT="$(pwd)"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROJECT_DIR="$ROOT/$PROJECT"
 TMP="$ROOT/scripts/outputs/tmp_$PROJECT"
 OUT="$ROOT/scripts/outputs/$ARCHIVE.zip"
-DELIVERIGNORE="$PROJECT_DIR/.deliverignore"
 
 if [ ! -d "$PROJECT_DIR" ]; then
   echo "ERROR: project directory not found: $PROJECT_DIR" >&2
@@ -27,12 +26,16 @@ fi
 rm -rf "$TMP"
 mkdir -p "$ROOT/scripts/outputs" "$TMP/screenshot" "$TMP/video" "$TMP/eseguibili"
 
-# 1. src/ — filtered by .deliverignore (gitignore semantics via rsync)
+# 1. src/ — filtered by .deliverignore (root and/or project-level)
 SRC_DIR="$PROJECT_DIR/src"
-if [ -f "$DELIVERIGNORE" ]; then
-  rsync -a --exclude-from="$DELIVERIGNORE" "$SRC_DIR/" "$TMP/src/"
+EXCLUDES=()
+[ -f "$ROOT/.deliverignore" ] && EXCLUDES+=(--exclude-from="$ROOT/.deliverignore")
+[ -f "$PROJECT_DIR/.deliverignore" ] && EXCLUDES+=(--exclude-from="$PROJECT_DIR/.deliverignore")
+
+if [ ${#EXCLUDES[@]} -gt 0 ]; then
+  rsync -a "${EXCLUDES[@]}" "$SRC_DIR/" "$TMP/src/"
 else
-  echo "WARNING: no .deliverignore found at $DELIVERIGNORE — copying src/ unfiltered"
+  echo "WARNING: no .deliverignore found at $ROOT/.deliverignore or $PROJECT_DIR/.deliverignore — copying src/ unfiltered"
   rsync -a "$SRC_DIR/" "$TMP/src/"
 fi
 
