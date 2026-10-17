@@ -71,18 +71,25 @@ This automatically:
 
 Package any homework project into a delivery-ready zip archive:
 
-```bash
-./scripts/export.sh <PROJECT> <ARCHIVE_NAME>
-```
+- **Linux / macOS**:
+  ```bash
+  ./scripts/export.sh <PROJECT> <ARCHIVE_NAME>
+  ```
+- **Windows (CMD / PowerShell)**:
+  ```cmd
+  .\scripts\export.bat <PROJECT> <ARCHIVE_NAME>
+  ```
 
 Example:
 ```bash
 ./scripts/export.sh I Camera_delivery
+# or on Windows:
+.\scripts\export.bat I Camera_delivery
 ```
 
 Generates `scripts/outputs/<ARCHIVE_NAME>.zip` structured as:
 - `src/`: source code filtered via repository root `.deliverignore` (and optional `<PROJECT>/.deliverignore`).
 - `screenshot/`: image deliverables (`.bmp`, `.png`, `.jpg`, etc.).
 - `video/`: video deliverables (`.mp4`, `.mov`, etc.).
-- `eseguibili/`: compiled Windows executables from `<PROJECT>/src/<Solution>/Release/x64/`.
+- `eseguibili/`: compiled Windows executables from `<PROJECT>/src/<Solution>/Release/x64/` (or `.exe` and `.dll` files from `cmake-build-release/` on Linux).
 - Root: `README.txt` and `.html` files from `<PROJECT>/deliverables/`.
