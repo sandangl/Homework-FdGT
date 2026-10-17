@@ -437,3 +437,4 @@ scripts/outputs/
 # Project Artifacts
 I/savedFrames
 *.mp4
+/.vscode
