@@ -10,7 +10,7 @@ if [ $# -ne 2 ]; then
 fi
 
 PROJECT="$1"
-ARCHIVE="$2"
+ARCHIVE="${2%.zip}"
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROJECT_DIR="$ROOT/$PROJECT"
@@ -58,7 +58,7 @@ find "$PROJECT_DIR/deliverables" -maxdepth 1 -iname "*.html" \
 [ -f "$PROJECT_DIR/deliverables/README.txt" ] && \
   cp "$PROJECT_DIR/deliverables/README.txt" "$TMP/"
 
-# 5. eseguibili — Release/x64 of the .sln found in src/
+# 5. eseguibili — Release/x64 of the .sln found in src/, or fallback to cmake-build-release
 SLN=$(find "$SRC_DIR" -maxdepth 1 -name "*.sln" | head -1)
 if [ -z "$SLN" ]; then
   echo "ERROR: no .sln file found in $SRC_DIR" >&2
@@ -66,10 +66,15 @@ if [ -z "$SLN" ]; then
 fi
 SLN_STEM=$(basename "$SLN" .sln)
 EXEC_SRC="$SRC_DIR/$SLN_STEM/Release/x64"
+CMAKE_SRC="$SRC_DIR/cmake-build-release"
+[ ! -d "$CMAKE_SRC" ] && CMAKE_SRC="$PROJECT_DIR/cmake-build-release"
+
 if [ -d "$EXEC_SRC" ]; then
   cp -r "$EXEC_SRC/." "$TMP/eseguibili/"
+elif [ -d "$CMAKE_SRC" ]; then
+  find "$CMAKE_SRC" -maxdepth 1 \( -iname "*.exe" -o -iname "*.dll" \) -exec cp {} "$TMP/eseguibili/" \;
 else
-  echo "WARNING: $EXEC_SRC not found — eseguibili/ will be empty"
+  echo "WARNING: neither $EXEC_SRC nor $CMAKE_SRC found — eseguibili/ will be empty"
 fi
 
 # 6. zip (paths relative to tmp root, no top-level folder)
