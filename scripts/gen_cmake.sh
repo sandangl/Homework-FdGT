@@ -284,19 +284,22 @@ check_mingw
   echo "endif()"
 } > "$OUT"
 
-# ── emit Rider Run Configuration ───────────────────────────────────────────────
+# ── emit Rider Run Configurations (Release & Debug) ───────────────────────────
 
 RUN_DIR="$SRC_DIR/.run"
 mkdir -p "$RUN_DIR"
-cat << EOF > "$RUN_DIR/$TARGET.run.xml"
+rm -f "$RUN_DIR/$TARGET.run.xml"
+for cfg in Release Debug; do
+  cat << EOF > "$RUN_DIR/$TARGET ($cfg).run.xml"
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="$TARGET" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="$TARGET" TARGET_NAME="$TARGET" CONFIG_NAME="Release" RUN_PATH="/usr/bin/wine" PROGRAM_PARAMS="$TARGET.exe" WORKING_DIR="\$CMakeCurrentBuildDir$">
+  <configuration default="false" name="$TARGET ($cfg)" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="$TARGET" TARGET_NAME="$TARGET" CONFIG_NAME="$cfg" RUN_PATH="/usr/bin/wine" PROGRAM_PARAMS="$TARGET.exe" WORKING_DIR="\$CMakeCurrentBuildDir$">
     <method v="2">
       <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider\$BuildBeforeRunTask" enabled="true" methodId="CMakeRunner.BuildBeforeRunTask" />
     </method>
   </configuration>
 </component>
 EOF
+done
 
 
 
