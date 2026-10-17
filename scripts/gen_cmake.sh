@@ -233,6 +233,17 @@ check_mingw
     echo "target_link_libraries($TARGET PRIVATE"
     echo "    -Wl,--whole-archive \${SDL2MAIN_LIB} -Wl,--no-whole-archive"
     echo "    \${SDL2_LIB})"
+    echo ""
+    echo "# Copy SDL2.dll to output directory alongside the executable"
+    echo "find_file(SDL2_DLL NAMES SDL2.dll PATH_SUFFIXES bin)"
+    echo "if(SDL2_DLL)"
+    echo "  add_custom_command(TARGET $TARGET POST_BUILD"
+    echo "    COMMAND \${CMAKE_COMMAND} -E copy_if_different"
+    echo "    \"\${SDL2_DLL}\""
+    echo "    \"\$<TARGET_FILE_DIR:$TARGET>\""
+    echo "    COMMENT \"Copying SDL2.dll next to binary\""
+    echo "  )"
+    echo "endif()"
   fi
   if [ "$PPL" -eq 1 ]; then
     echo ""
