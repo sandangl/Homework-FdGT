@@ -37,10 +37,11 @@ check_mingw() {
 
 # Check SDL2 mingw headers exist (proxy for libsdl2-mingw-dev)
 check_sdl2_mingw() {
-  local sdl_header="/usr/x86_64-w64-mingw32/include/SDL2/SDL.h"
+  local prefix="${SDL2_PREFIX:-/usr/x86_64-w64-mingw32}"
+  local sdl_header="${prefix%/}/include/SDL2/SDL.h"
   if [ ! -f "$sdl_header" ]; then
     echo "ERROR: SDL2 mingw headers not found (expected $sdl_header)." >&2
-    echo "Install the SDL2 mingw dev package for your distro:" >&2
+    echo "Check SDL2_PREFIX in scripts/gen_cmake.conf or install package:" >&2
     sdl2_install_hint >&2
     exit 1
   fi
@@ -124,6 +125,11 @@ fi
 PROJECT="$1"
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+CONF_FILE="$ROOT/scripts/gen_cmake.conf"
+if [ -f "$CONF_FILE" ]; then
+  # shellcheck source=/dev/null
+  source "$CONF_FILE"
+fi
 SRC_DIR="$ROOT/$PROJECT/src"
 [ -d "$SRC_DIR" ] || die "src/ not found: $SRC_DIR"
 
@@ -187,6 +193,15 @@ check_mingw
   echo "# Cross-compile to Windows x64:  cmake -DCMAKE_TOOLCHAIN_FILE=<repo>/scripts/mingw-toolchain.cmake -S . -B build"
   echo ""
   echo "cmake_minimum_required(VERSION 3.20)"
+  echo ""
+  echo "# Auto-set MinGW toolchain for Windows cross-compilation if not passed explicitly"
+  echo "if(NOT CMAKE_TOOLCHAIN_FILE AND NOT WIN32)"
+  echo "  get_filename_component(_DEFAULT_TOOLCHAIN \"\${CMAKE_CURRENT_LIST_DIR}/../../scripts/mingw-toolchain.cmake\" ABSOLUTE)"
+  echo "  if(EXISTS \"\${_DEFAULT_TOOLCHAIN}\")"
+  echo "    set(CMAKE_TOOLCHAIN_FILE \"\${_DEFAULT_TOOLCHAIN}\" CACHE FILEPATH \"MinGW toolchain\" FORCE)"
+  echo "  endif()"
+  echo "endif()"
+  echo ""
   echo "project($TARGET)"
   echo ""
   echo "set(CMAKE_CXX_STANDARD $CXX_STD)"
@@ -202,7 +217,10 @@ check_mingw
   echo "target_include_directories($TARGET PRIVATE \${CMAKE_CURRENT_SOURCE_DIR})"
   echo ""
   if [ "$SDL2" -eq 1 ]; then
-    echo "# SDL2 via mingw-w64 system package (e.g. libsdl2-mingw-dev on Debian/Ubuntu)"
+    echo "# SDL2 via mingw-w64 system package"
+    if [ -n "${SDL2_PREFIX:-}" ]; then
+      echo "list(APPEND CMAKE_PREFIX_PATH \"${SDL2_PREFIX}\")"
+    fi
     echo "# find_package(SDL2) has no config file in the mingw package; use find_path/find_library instead."
     echo "find_path(SDL2_INCLUDE_DIR NAMES SDL.h PATH_SUFFIXES SDL2)"
     echo "find_library(SDL2_LIB  NAMES SDL2)"
