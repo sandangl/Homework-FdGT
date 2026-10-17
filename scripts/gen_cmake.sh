@@ -201,6 +201,10 @@ check_mingw
   echo "    set(CMAKE_TOOLCHAIN_FILE \"\${_DEFAULT_TOOLCHAIN}\" CACHE FILEPATH \"MinGW toolchain\" FORCE)"
   echo "  endif()"
   echo "endif()"
+  echo "if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)"
+  echo "  set(CMAKE_BUILD_TYPE Release CACHE STRING \"Build type\" FORCE)"
+  echo "  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS \"Debug\" \"Release\" \"MinSizeRel\" \"RelWithDebInfo\")"
+  echo "endif()"
   echo ""
   echo "project($TARGET)"
   echo ""
@@ -212,6 +216,15 @@ check_mingw
     echo "    $src"
   done
   echo ")"
+  echo ""
+  echo "# Run with Wine when executing on Linux (IDE 'Play' button / CTest)"
+  echo "find_program(WINE_BIN wine)"
+  echo "if(WINE_BIN)"
+  echo "  set_target_properties($TARGET PROPERTIES CROSSCOMPILING_EMULATOR \"\${WINE_BIN}\")"
+  echo "endif()"
+  echo ""
+  echo "# Static runtime linking: prevents missing libgcc_s_seh-1.dll and libstdc++-6.dll"
+  echo "target_link_options($TARGET PRIVATE -static-libgcc -static-libstdc++)"
   echo ""
   echo "# src/ on include path: lets shims (ppl.h, etc.) placed here shadow system headers."
   echo "target_include_directories($TARGET PRIVATE \${CMAKE_CURRENT_SOURCE_DIR})"
@@ -233,17 +246,7 @@ check_mingw
     echo "target_link_libraries($TARGET PRIVATE"
     echo "    -Wl,--whole-archive \${SDL2MAIN_LIB} -Wl,--no-whole-archive"
     echo "    \${SDL2_LIB})"
-    echo ""
-    echo "# Copy SDL2.dll to output directory alongside the executable"
     echo "find_file(SDL2_DLL NAMES SDL2.dll PATH_SUFFIXES bin)"
-    echo "if(SDL2_DLL)"
-    echo "  add_custom_command(TARGET $TARGET POST_BUILD"
-    echo "    COMMAND \${CMAKE_COMMAND} -E copy_if_different"
-    echo "    \"\${SDL2_DLL}\""
-    echo "    \"\$<TARGET_FILE_DIR:$TARGET>\""
-    echo "    COMMENT \"Copying SDL2.dll next to binary\""
-    echo "  )"
-    echo "endif()"
   fi
   if [ "$PPL" -eq 1 ]; then
     echo ""
@@ -253,7 +256,48 @@ check_mingw
     echo "  target_link_libraries($TARGET PRIVATE OpenMP::OpenMP_CXX)"
     echo "endif()"
   fi
+  echo ""
+  echo "# Deploy all required runtime DLLs alongside the executable"
+  echo "set(RUNTIME_DLLS \"\")"
+  if [ "$SDL2" -eq 1 ]; then
+    echo "if(SDL2_DLL)"
+    echo "  list(APPEND RUNTIME_DLLS \"\${SDL2_DLL}\")"
+    echo "endif()"
+  fi
+  echo "foreach(DLL_NAME libgomp-1.dll libwinpthread-1.dll libgcc_s_seh-1.dll libstdc++-6.dll)"
+  echo "  execute_process("
+  echo "    COMMAND \${CMAKE_CXX_COMPILER} -print-file-name=\${DLL_NAME}"
+  echo "    OUTPUT_VARIABLE DLL_PATH"
+  echo "    OUTPUT_STRIP_TRAILING_WHITESPACE"
+  echo "  )"
+  echo "  if(EXISTS \"\${DLL_PATH}\")"
+  echo "    list(APPEND RUNTIME_DLLS \"\${DLL_PATH}\")"
+  echo "  endif()"
+  echo "endforeach()"
+  echo "if(RUNTIME_DLLS)"
+  echo "  add_custom_command(TARGET $TARGET POST_BUILD"
+  echo "    COMMAND \${CMAKE_COMMAND} -E copy_if_different"
+  echo "    \${RUNTIME_DLLS}"
+  echo "    \"\$<TARGET_FILE_DIR:$TARGET>\""
+  echo "    COMMENT \"Deploying runtime DLLs to binary directory\""
+  echo "  )"
+  echo "endif()"
 } > "$OUT"
+
+# ── emit Rider Run Configuration ───────────────────────────────────────────────
+
+RUN_DIR="$SRC_DIR/.run"
+mkdir -p "$RUN_DIR"
+cat << EOF > "$RUN_DIR/$TARGET.run.xml"
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="$TARGET" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="$TARGET" TARGET_NAME="$TARGET" CONFIG_NAME="Release" RUN_PATH="/usr/bin/wine" PROGRAM_PARAMS="$TARGET.exe" WORKING_DIR="\$CMakeCurrentBuildDir$">
+    <method v="2">
+      <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider\$BuildBeforeRunTask" enabled="true" methodId="CMakeRunner.BuildBeforeRunTask" />
+    </method>
+  </configuration>
+</component>
+EOF
+
 
 
 echo "Written: $OUT"

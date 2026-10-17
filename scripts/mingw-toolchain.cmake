@@ -14,3 +14,6 @@ set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
 
+# Emulator for running Windows binaries on Linux host (supported by CMake and JetBrains IDEs)
+find_program(CMAKE_CROSSCOMPILING_EMULATOR wine)
+
