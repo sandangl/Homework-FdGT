@@ -10,13 +10,9 @@ if(NOT CMAKE_TOOLCHAIN_FILE AND NOT WIN32)
     set(CMAKE_TOOLCHAIN_FILE "${_DEFAULT_TOOLCHAIN}" CACHE FILEPATH "MinGW toolchain" FORCE)
   endif()
 endif()
-
-
-if(NOT CMAKE_TOOLCHAIN_FILE AND NOT WIN32)
-  get_filename_component(_DEFAULT_TOOLCHAIN "${CMAKE_CURRENT_LIST_DIR}/../../scripts/mingw-toolchain.cmake" ABSOLUTE)
-  if(EXISTS "${_DEFAULT_TOOLCHAIN}")
-    set(CMAKE_TOOLCHAIN_FILE "${_DEFAULT_TOOLCHAIN}" CACHE FILEPATH "MinGW toolchain" FORCE)
-  endif()
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
 
 project(Camera)
@@ -27,6 +23,15 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_executable(Camera
     main.cpp
 )
+
+# Run with Wine when executing on Linux (IDE 'Play' button / CTest)
+find_program(WINE_BIN wine)
+if(WINE_BIN)
+  set_target_properties(Camera PROPERTIES CROSSCOMPILING_EMULATOR "${WINE_BIN}")
+endif()
+
+# Static runtime linking: prevents missing libgcc_s_seh-1.dll and libstdc++-6.dll
+target_link_options(Camera PRIVATE -static-libgcc -static-libstdc++)
 
 # src/ on include path: lets shims (ppl.h, etc.) placed here shadow system headers.
 target_include_directories(Camera PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
@@ -45,9 +50,34 @@ target_include_directories(Camera PRIVATE ${SDL2_INCLUDE_DIR})
 target_link_libraries(Camera PRIVATE
     -Wl,--whole-archive ${SDL2MAIN_LIB} -Wl,--no-whole-archive
     ${SDL2_LIB})
+find_file(SDL2_DLL NAMES SDL2.dll PATH_SUFFIXES bin)
 
 # OpenMP — needed by the ppl.h shim (concurrency::parallel_for)
 find_package(OpenMP)
 if(OpenMP_CXX_FOUND)
   target_link_libraries(Camera PRIVATE OpenMP::OpenMP_CXX)
+endif()
+
+# Deploy all required runtime DLLs alongside the executable
+set(RUNTIME_DLLS "")
+if(SDL2_DLL)
+  list(APPEND RUNTIME_DLLS "${SDL2_DLL}")
+endif()
+foreach(DLL_NAME libgomp-1.dll libwinpthread-1.dll libgcc_s_seh-1.dll libstdc++-6.dll)
+  execute_process(
+    COMMAND ${CMAKE_CXX_COMPILER} -print-file-name=${DLL_NAME}
+    OUTPUT_VARIABLE DLL_PATH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  if(EXISTS "${DLL_PATH}")
+    list(APPEND RUNTIME_DLLS "${DLL_PATH}")
+  endif()
+endforeach()
+if(RUNTIME_DLLS)
+  add_custom_command(TARGET Camera POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    ${RUNTIME_DLLS}
+    "$<TARGET_FILE_DIR:Camera>"
+    COMMENT "Deploying runtime DLLs to binary directory"
+  )
 endif()

@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Camera (Debug)" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Camera" TARGET_NAME="Camera" CONFIG_NAME="Debug" RUN_PATH="/usr/bin/wine" PROGRAM_PARAMS="Camera.exe" WORKING_DIR="$CMakeCurrentBuildDir$">
+    <method v="2">
+      <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" methodId="CMakeRunner.BuildBeforeRunTask" />
+    </method>
+  </configuration>
+</component>
