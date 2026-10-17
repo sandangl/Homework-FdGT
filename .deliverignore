@@ -1,0 +1,12 @@
+.vs/
+.vscode/
+.idea/
+.run/
+packages/
+x64/
+Debug/
+Release/
+cmake-build-debug/
+cmake-build-release/
+CMakeLists.txt
+ppl.h
