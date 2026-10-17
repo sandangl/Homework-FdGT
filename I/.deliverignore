@@ -1,0 +1,7 @@
+.vs/
+.vscode/
+.idea/
+packages/
+x64/
+Debug/
+Release/

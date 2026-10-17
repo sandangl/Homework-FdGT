@@ -428,6 +428,12 @@ FodyWeavers.xsd
 *.msm
 *.msp
 
+# Rider
+.idea
+
+# Output Delivery
+scripts/outputs/
+
 # Project Artifacts
 I/savedFrames
 *.mp4
