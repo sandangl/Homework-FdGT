@@ -71,6 +71,47 @@ uses_sdl2() {
   return 1
 }
 
+# Detect ppl.h usage in any C++/header files
+uses_ppl() {
+  local src_dir="$1"
+  grep -rqE --include="*.h" --include="*.hpp" --include="*.cpp" --exclude="ppl.h" '#include[[:space:]]*[<"]ppl\.h[>"]' "$src_dir" 2>/dev/null
+}
+
+emit_ppl_shim() {
+  local target_file="$1"
+  cat << 'EOF' > "$target_file"
+// ppl.h shim — provides concurrency::parallel_for via OpenMP for MinGW/GCC.
+#pragma once
+#ifndef PPL_SHIM_H
+#define PPL_SHIM_H
+
+#ifndef _MSC_VER
+
+#include <functional>
+
+namespace concurrency {
+
+template <typename Index, typename Function>
+inline void parallel_for(Index first, Index last, const Function& f) {
+#ifdef _OPENMP
+    #pragma omp parallel for schedule(dynamic)
+    for (Index i = first; i < last; ++i)
+        f(i);
+#else
+    for (Index i = first; i < last; ++i)
+        f(i);
+#endif
+}
+
+} // namespace concurrency
+
+using concurrency::parallel_for;
+
+#endif // !_MSC_VER
+#endif // PPL_SHIM_H
+EOF
+}
+
 # ── argument parsing ──────────────────────────────────────────────────────────
 
 FORCE=0
@@ -124,6 +165,16 @@ if uses_sdl2 "$SRC_DIR" "$VCXPROJ"; then
   SDL2=1
 fi
 
+PPL=0
+if uses_ppl "$SRC_DIR"; then
+  PPL=1
+  PPL_FILE="$SRC_DIR/ppl.h"
+  if [ ! -f "$PPL_FILE" ] || [ "$FORCE" -eq 1 ]; then
+    emit_ppl_shim "$PPL_FILE"
+    echo "Generated ppl.h shim: $PPL_FILE"
+  fi
+fi
+
 # ── dependency checks ─────────────────────────────────────────────────────────
 
 check_mingw
@@ -147,13 +198,34 @@ check_mingw
   done
   echo ")"
   echo ""
+  echo "# src/ on include path: lets shims (ppl.h, etc.) placed here shadow system headers."
+  echo "target_include_directories($TARGET PRIVATE \${CMAKE_CURRENT_SOURCE_DIR})"
+  echo ""
   if [ "$SDL2" -eq 1 ]; then
     echo "# SDL2 via mingw-w64 system package (e.g. libsdl2-mingw-dev on Debian/Ubuntu)"
-    echo "find_package(SDL2 REQUIRED)"
-    echo "target_include_directories($TARGET PRIVATE \${SDL2_INCLUDE_DIRS})"
-    echo "target_link_libraries($TARGET PRIVATE \${SDL2_LIBRARIES})"
+    echo "# find_package(SDL2) has no config file in the mingw package; use find_path/find_library instead."
+    echo "find_path(SDL2_INCLUDE_DIR NAMES SDL.h PATH_SUFFIXES SDL2)"
+    echo "find_library(SDL2_LIB  NAMES SDL2)"
+    echo "find_library(SDL2MAIN_LIB NAMES SDL2main)"
+    echo "if(NOT SDL2_INCLUDE_DIR OR NOT SDL2_LIB)"
+    echo "  message(FATAL_ERROR \"SDL2 not found — install libsdl2-mingw-dev (Debian/Ubuntu) or equivalent.\")"
+    echo "endif()"
+    echo "target_include_directories($TARGET PRIVATE \${SDL2_INCLUDE_DIR})"
+    echo "# --whole-archive ensures SDL2main's WinMain is always linked (ld won't pull it lazily)."
+    echo "target_link_libraries($TARGET PRIVATE"
+    echo "    -Wl,--whole-archive \${SDL2MAIN_LIB} -Wl,--no-whole-archive"
+    echo "    \${SDL2_LIB})"
+  fi
+  if [ "$PPL" -eq 1 ]; then
+    echo ""
+    echo "# OpenMP — needed by the ppl.h shim (concurrency::parallel_for)"
+    echo "find_package(OpenMP)"
+    echo "if(OpenMP_CXX_FOUND)"
+    echo "  target_link_libraries($TARGET PRIVATE OpenMP::OpenMP_CXX)"
+    echo "endif()"
   fi
 } > "$OUT"
+
 
 echo "Written: $OUT"
 echo ""
