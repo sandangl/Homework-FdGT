@@ -435,6 +435,6 @@ FodyWeavers.xsd
 scripts/outputs/
 
 # Project Artifacts
-I/savedFrames
+savedFrames
 *.mp4
 /.vscode
