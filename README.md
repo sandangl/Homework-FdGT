@@ -2,6 +2,10 @@
 
 This repo is a journal for the 3D Graphics Fundamentals course (University of Basilicata) for the 2026/2027 academic year.
 
+> [!NOTE] Note
+>
+> This project is meant to be run in a Windows environment, using Visual Studio as IDE for development; however, it is possible to setup the project for development on Linux-based systems using JetBrains Rider as IDE, cross-compiling to Windows executables using CMake and Mingw. 
+>
 ---
 
 ## First Homework
