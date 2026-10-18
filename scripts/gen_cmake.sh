@@ -313,4 +313,6 @@ echo "  cmake --build /tmp/build_$PROJECT"
 echo ""
 echo "Rider: Settings → Build → CMake → CMake options:"
 echo "  -DCMAKE_TOOLCHAIN_FILE=\$(pwd)/scripts/mingw-toolchain.cmake"
-
+echo ""
+echo ""
+echo "SUCCESS"
