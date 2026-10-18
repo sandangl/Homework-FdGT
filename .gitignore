@@ -428,8 +428,9 @@ FodyWeavers.xsd
 *.msm
 *.msp
 
-# Rider
+# IDE
 .idea
+.vscode
 
 # Output Delivery
 scripts/outputs/
@@ -437,4 +438,4 @@ scripts/outputs/
 # Project Artifacts
 savedFrames
 *.mp4
-/.vscode
+cmake-build-*
