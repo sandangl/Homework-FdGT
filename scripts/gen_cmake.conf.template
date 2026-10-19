@@ -4,3 +4,4 @@
 # Injected as: list(APPEND CMAKE_PREFIX_PATH "${SDL2_PREFIX}")
 SDL2_PREFIX="/usr/x86_64-w64-mingw32/"
 
+

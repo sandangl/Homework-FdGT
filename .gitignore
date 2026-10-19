@@ -439,3 +439,4 @@ scripts/outputs/
 savedFrames
 *.mp4
 cmake-build-*
+/scripts/gen_cmake.conf
