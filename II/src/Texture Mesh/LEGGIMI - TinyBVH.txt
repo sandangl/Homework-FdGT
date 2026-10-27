@@ -1,0 +1,43 @@
+Texture Mesh con TinyBVH (ottobre 2026)
+
+- mesh.h usa TinyBVH 1.9.1 (cartella tinybvh/, licenza MIT) per l'intersezione raggio-mesh:
+  il BVH e' costruito in load_mesh (tiny.Build), hit usa tiny.Intersect e hit_shadow tiny.IsOccluded.
+  Le coordinate di texture (u, v) e la normale sono interpolate con i pesi baricentrici restituiti da TinyBVH.
+- mesh_bruteforce.h e' la versione precedente, senza BVH (ciclo su tutti i triangoli). La scelta si fa con la
+  macro USE_TINYBVH in cima a main.cpp (1 = TinyBVH, 0 = forza bruta), oppure definendo USE_TINYBVH=0 fra le
+  definizioni del preprocessore nelle proprieta' del progetto.
+- Il progetto richiede C++17 (impostato in Texture Mesh.vcxproj: Standard del linguaggio C++ = ISO C++17).
+  Con C++14 definire NO_THREADED_BUILDS prima di #include "tinybvh/tiny_bvh.h".
+- main.cpp: il tempo di rendering e' misurato con std::chrono (prima time() in secondi interi).
+- Scena del gatto (70 576 triangoli, 700 x 393): circa 0.1 s invece di 77 s (g++ -O2, 2 core).
+
+Revisione del 25 ottobre 2026 (verifica e correzione del codice)
+- Il progetto non compilava con Visual Studio 2026 (MSVC 14.51): TinyBVH 1.9.1 include "windows.h"
+  DENTRO il proprio namespace (tiny_bvh_base.h, pool di thread), quindi il successivo #include <windows.h>
+  di camera.h veniva saltato e ppl.h non trovava HRESULT. Ora mesh.h include windows.h (a livello globale)
+  prima di tiny_bvh.h, e camera.h definisce NOMINMAX e WIN32_LEAN_AND_MEAN prima di windows.h
+  (con C++17 e "using namespace std" il "byte" di rpcndr.h e' ambiguo con std::byte).
+- main.cpp: il ciclo degli eventi era "while (SDL_PollEvent(&event) || !quit)", che a coda vuota
+  rielaborava l'ultimo evento all'infinito (es. con il tasto S salvava screenshot in continuazione).
+  Ora si consumano tutti gli eventi in coda e poi si attende con SDL_Delay. Aggiunta IMG_Init e il
+  controllo che il modello sia stato caricato; SDL viene inizializzato prima di caricare la texture.
+- instance.h: rotate_y moltiplicava current_matrix nell'ordine sbagliato (current * R invece di
+  R * current, come rotate_x e rotate_z), quindi current_matrix e inverse_matrix non erano piu' una
+  l'inversa dell'altra se la rotazione intorno a y non era la prima trasformazione applicata.
+- material.h / texture.h: i membri "texture* texture" e "color color" (stesso nome del tipo) sono un
+  errore con g++; rinominati in "tex" e "c". Il materiale senza texture (tex == nullptr) ora usa kd:
+  prima lo shader dereferenziava sempre il puntatore (crash con un materiale qualsiasi).
+- texture.h / raster.h: i canali del colore si leggono con SDL_GetRGB (prima si faceva uno scambio
+  R<->B "a mano" che funzionava solo per caso con il formato RGB24). loadTexture converte l'immagine in
+  RGB24 con SDL_ConvertSurfaceFormat, cosi' si possono usare anche PNG a 32 bit; in caso di errore la
+  texture mancante si vede come magenta. saveScreenshotBMP non libera piu' la surface della finestra
+  (che appartiene a SDL) e non perde piu' memoria nei percorsi di errore.
+- mesh_bruteforce.h non compilava (argomenti di default ripetuti nella definizione di load_mesh);
+  bounding box inizializzato con intervalli vuoti invece di FLT_MIN/FLT_MAX; controllo degli indici
+  -1 di normali e coordinate di texture come in mesh.h. Verificato che compila al posto di mesh.h.
+- interval.h: definiti i membri statici interval::empty e interval::universe.
+- geometry.h: plane::hit calcolava t normalizzando la direzione (t non era il parametro del raggio).
+- Rimossi bvh.h (il vecchio BVH scritto a mano sulle istanze) e scene.h, l'unico file che lo includeva:
+  entrambi erano fuori dal progetto reale e non compilavano. L'accelerazione e' tutta in TinyBVH (mesh.h).
+- File non usati da main.cpp e non piu' allineati all'interfaccia hittable (non compilano se inclusi):
+  object.h con cylinder.h e geometry.h. Sono rimasti per riferimento storico.
