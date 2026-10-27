@@ -28,6 +28,9 @@ sdl2_install_hint() {
 # Check that the mingw compiler is available
 check_mingw() {
   if ! command -v x86_64-w64-mingw32-g++ &>/dev/null; then
+    if command -v flatpak-spawn &>/dev/null && flatpak-spawn --host which x86_64-w64-mingw32-g++ &>/dev/null; then
+      return 0
+    fi
     echo "ERROR: x86_64-w64-mingw32-g++ not found." >&2
     echo "Install mingw-w64 + SDL2 mingw dev package, e.g.:" >&2
     sdl2_install_hint >&2
@@ -40,6 +43,12 @@ check_sdl2_mingw() {
   local prefix="${SDL2_PREFIX:-/usr/x86_64-w64-mingw32}"
   local sdl_header="${prefix%/}/include/SDL2/SDL.h"
   if [ ! -f "$sdl_header" ]; then
+    if command -v flatpak-spawn &>/dev/null && flatpak-spawn --host test -f "$sdl_header"; then
+      return 0
+    fi
+    if [ -f "/run/host$sdl_header" ]; then
+      return 0
+    fi
     echo "ERROR: SDL2 mingw headers not found (expected $sdl_header)." >&2
     echo "Check SDL2_PREFIX in scripts/gen_cmake.conf or install package:" >&2
     sdl2_install_hint >&2
@@ -59,17 +68,16 @@ cpp_sources() {
   grep -oP '(?<=<ClCompile Include=")[^"]+' "$file" 2>/dev/null || true
 }
 
-# Detect SDL2 usage: look for #include.*SDL in listed .cpp sources
+# Detect SDL2 usage: look for #include.*SDL in headers/sources
 uses_sdl2() {
-  local src_dir="$1" vcxproj="$2"
-  while IFS= read -r src; do
-    local path="$src_dir/$src"
-    [ -f "$path" ] || continue
-    if grep -qE '#include[[:space:]]*("|<)SDL' "$path"; then
-      return 0
-    fi
-  done < <(cpp_sources "$vcxproj")
-  return 1
+  local dir="$1"
+  grep -rqE --include="*.h" --include="*.hpp" --include="*.cpp" '#include[[:space:]]*[<"](SDL2/)?SDL\.h[>"]' "$dir" 2>/dev/null
+}
+
+# Detect SDL2_image usage
+uses_sdl2_image() {
+  local dir="$1"
+  grep -rqE --include="*.h" --include="*.hpp" --include="*.cpp" '#include[[:space:]]*[<"](SDL2/)?SDL_image\.h[>"]' "$dir" 2>/dev/null
 }
 
 # Detect ppl.h usage in any C++/header files
@@ -133,8 +141,22 @@ fi
 SRC_DIR="$ROOT/$PROJECT/src"
 [ -d "$SRC_DIR" ] || die "src/ not found: $SRC_DIR"
 
-VCXPROJ=$(find "$SRC_DIR" -maxdepth 1 -name "*.vcxproj" | head -1)
+SLN=$(find "$SRC_DIR" -maxdepth 1 -name "*.sln" | head -1)
+VCXPROJ=""
+if [ -n "$SLN" ]; then
+  SLN_STEM=$(basename "$SLN" .sln)
+  VCXPROJ=$(find "$SRC_DIR" -maxdepth 2 -name "$SLN_STEM.vcxproj" | head -1)
+fi
+if [ -z "$VCXPROJ" ]; then
+  VCXPROJ=$(find "$SRC_DIR" -maxdepth 2 -name "*.vcxproj" ! -name "*tests*" | head -1)
+fi
 [ -n "$VCXPROJ" ] || die "No .vcxproj found in $SRC_DIR"
+
+PROJ_DIR="$(dirname "$VCXPROJ")"
+REL_PROJ_DIR=""
+if [ "$PROJ_DIR" != "$SRC_DIR" ]; then
+  REL_PROJ_DIR="${PROJ_DIR#$SRC_DIR/}"
+fi
 
 OUT="$SRC_DIR/CMakeLists.txt"
 
@@ -163,12 +185,25 @@ case "$LANG_RAW" in
   *)        CXX_STD=17 ;;  # sensible default
 esac
 
-mapfile -t SOURCES < <(cpp_sources "$VCXPROJ")
-[ ${#SOURCES[@]} -gt 0 ] || die "No <ClCompile> sources found in $VCXPROJ"
+mapfile -t RAW_SOURCES < <(cpp_sources "$VCXPROJ")
+[ ${#RAW_SOURCES[@]} -gt 0 ] || die "No <ClCompile> sources found in $VCXPROJ"
+SOURCES=()
+for src in "${RAW_SOURCES[@]}"; do
+  src="${src//\\//}"
+  if [ -n "$REL_PROJ_DIR" ]; then
+    src="$REL_PROJ_DIR/$src"
+  fi
+  SOURCES+=("$src")
+done
 
 SDL2=0
-if uses_sdl2 "$SRC_DIR" "$VCXPROJ"; then
+if uses_sdl2 "$SRC_DIR"; then
   SDL2=1
+fi
+
+SDL2_IMAGE=0
+if uses_sdl2_image "$SRC_DIR"; then
+  SDL2_IMAGE=1
 fi
 
 PPL=0
@@ -213,7 +248,7 @@ check_mingw
   echo ""
   echo "add_executable($TARGET"
   for src in "${SOURCES[@]}"; do
-    echo "    $src"
+    echo "    \"$src\""
   done
   echo ")"
   echo ""
@@ -228,6 +263,9 @@ check_mingw
   echo ""
   echo "# src/ on include path: lets shims (ppl.h, etc.) placed here shadow system headers."
   echo "target_include_directories($TARGET PRIVATE \${CMAKE_CURRENT_SOURCE_DIR})"
+  if [ -n "$REL_PROJ_DIR" ]; then
+    echo "target_include_directories($TARGET PRIVATE \"\${CMAKE_CURRENT_SOURCE_DIR}/$REL_PROJ_DIR\")"
+  fi
   echo ""
   if [ "$SDL2" -eq 1 ]; then
     echo "# SDL2 via mingw-w64 system package"
@@ -248,6 +286,36 @@ check_mingw
     echo "    \${SDL2_LIB})"
     echo "find_file(SDL2_DLL NAMES SDL2.dll PATH_SUFFIXES bin)"
   fi
+  if [ "$SDL2_IMAGE" -eq 1 ]; then
+    echo ""
+    echo "# SDL2_image — system mingw package or NuGet package under packages/"
+    echo "find_path(SDL2_IMAGE_INCLUDE_DIR NAMES SDL_image.h PATH_SUFFIXES SDL2 CMAKE_FIND_ROOT_PATH_BOTH)"
+    echo "if(NOT SDL2_IMAGE_INCLUDE_DIR)"
+    echo "  file(GLOB _IMG_INC \"\${CMAKE_CURRENT_SOURCE_DIR}/packages/sdl2_image*/build/native/include\")"
+    echo "  if(_IMG_INC)"
+    echo "    list(GET _IMG_INC 0 SDL2_IMAGE_INCLUDE_DIR)"
+    echo "  endif()"
+    echo "endif()"
+    echo "find_library(SDL2_IMAGE_LIB NAMES SDL2_image CMAKE_FIND_ROOT_PATH_BOTH)"
+    echo "if(NOT SDL2_IMAGE_LIB)"
+    echo "  file(GLOB _IMG_LIB \"\${CMAKE_CURRENT_SOURCE_DIR}/packages/sdl2_image*/build/native/lib/x64/dynamic/SDL2_image.lib\")"
+    echo "  if(_IMG_LIB)"
+    echo "    list(GET _IMG_LIB 0 SDL2_IMAGE_LIB)"
+    echo "  endif()"
+    echo "endif()"
+    echo "if(NOT SDL2_IMAGE_INCLUDE_DIR OR NOT SDL2_IMAGE_LIB)"
+    echo "  message(FATAL_ERROR \"SDL2_image not found — install mingw SDL2_image or restore NuGet packages.\")"
+    echo "endif()"
+    echo "target_include_directories($TARGET PRIVATE \${SDL2_IMAGE_INCLUDE_DIR})"
+    echo "target_link_libraries($TARGET PRIVATE \${SDL2_IMAGE_LIB})"
+    echo "find_file(SDL2_IMAGE_DLL NAMES SDL2_image.dll PATH_SUFFIXES bin CMAKE_FIND_ROOT_PATH_BOTH)"
+    echo "if(NOT SDL2_IMAGE_DLL)"
+    echo "  file(GLOB _IMG_DLL \"\${CMAKE_CURRENT_SOURCE_DIR}/packages/sdl2_image.nuget.redist*/build/native/bin/x64/dynamic/SDL2_image.dll\")"
+    echo "  if(_IMG_DLL)"
+    echo "    list(GET _IMG_DLL 0 SDL2_IMAGE_DLL)"
+    echo "  endif()"
+    echo "endif()"
+  fi
   if [ "$PPL" -eq 1 ]; then
     echo ""
     echo "# OpenMP — needed by the ppl.h shim (concurrency::parallel_for)"
@@ -264,6 +332,14 @@ check_mingw
     echo "  list(APPEND RUNTIME_DLLS \"\${SDL2_DLL}\")"
     echo "endif()"
   fi
+  if [ "$SDL2_IMAGE" -eq 1 ]; then
+    echo "if(SDL2_IMAGE_DLL)"
+    echo "  list(APPEND RUNTIME_DLLS \"\${SDL2_IMAGE_DLL}\")"
+    echo "  get_filename_component(_SDL2_IMG_DIR \"\${SDL2_IMAGE_DLL}\" DIRECTORY)"
+    echo "  file(GLOB _SDL2_IMG_DEPS \"\${_SDL2_IMG_DIR}/*.dll\")"
+    echo "  list(APPEND RUNTIME_DLLS \${_SDL2_IMG_DEPS})"
+    echo "endif()"
+  fi
   echo "foreach(DLL_NAME libgomp-1.dll libwinpthread-1.dll libgcc_s_seh-1.dll libstdc++-6.dll)"
   echo "  execute_process("
   echo "    COMMAND \${CMAKE_CXX_COMPILER} -print-file-name=\${DLL_NAME}"
@@ -275,6 +351,7 @@ check_mingw
   echo "  endif()"
   echo "endforeach()"
   echo "if(RUNTIME_DLLS)"
+  echo "  list(REMOVE_DUPLICATES RUNTIME_DLLS)"
   echo "  add_custom_command(TARGET $TARGET POST_BUILD"
   echo "    COMMAND \${CMAKE_COMMAND} -E copy_if_different"
   echo "    \${RUNTIME_DLLS}"
