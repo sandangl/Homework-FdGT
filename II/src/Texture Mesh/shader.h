@@ -17,7 +17,7 @@ inline vec3 reflect(const vec3& i, const vec3& n)
 	return  2.0f * dot(i, n) * n - i; // i vettore uscente dalla normale
 }
 
-color phong_shading(point_light& light, hit_record& hr, point3& camera_pos) {
+color phong_shading(light& light, hit_record& hr, point3& camera_pos) {
 	color ambient(0.0f, 0.0f, 0.0f);
 	color diffuse(0.0f, 0.0f, 0.0f);
 	color specular(0.0f, 0.0f, 0.0f);
@@ -39,8 +39,10 @@ color phong_shading(point_light& light, hit_record& hr, point3& camera_pos) {
 		float VDotR = std::pow(std::max(dot(V, R), 0.0f), hr.m->alpha);
 
 		specular = hr.m->ks * light.specular * VDotR;
+		
+		float f = light.calculate_light_interaction(hr.p);
 
-		return ambient + diffuse + specular;
+		return ambient + f * (diffuse + specular);
 	}
 	else
 		return ambient;

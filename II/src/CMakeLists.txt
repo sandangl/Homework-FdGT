@@ -22,6 +22,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_executable(TextureMesh
     "Texture Mesh/main.cpp"
+        "Texture Mesh/light.h"
+        "Texture Mesh/shader.h"
 )
 
 # Run with Wine when executing on Linux (IDE 'Play' button / CTest)
@@ -38,7 +40,6 @@ target_include_directories(TextureMesh PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(TextureMesh PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Texture Mesh")
 
 # SDL2 via mingw-w64 system package
-list(APPEND CMAKE_PREFIX_PATH "/usr/x86_64-w64-mingw32/")
 # find_package(SDL2) has no config file in the mingw package; use find_path/find_library instead.
 find_path(SDL2_INCLUDE_DIR NAMES SDL.h PATH_SUFFIXES SDL2)
 find_library(SDL2_LIB  NAMES SDL2)
