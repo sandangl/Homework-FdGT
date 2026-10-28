@@ -19,7 +19,7 @@ public:
 	float att_c;
 	
 	virtual ~light() = default;
-	virtual float calculate_light_interaction(point3 p) = 0;
+	virtual float calculate_light_interaction(point3 p, float luminance) = 0;
 };
 
 class spotlight : public light{
@@ -39,20 +39,20 @@ public:
 		theta_1 = tinybvh::tinybvh_clamp(smoothness, 0.0f, 1.0f) * theta_0;
 	}
 	
-	float calculate_light_interaction(point3 p) override
+	float calculate_light_interaction(point3 p, float luminance) override
 	{
 		vec3 p_ps = p - p_s;
 		float dist = p_ps.length();
 		vec3 l = (p_ps)/dist;
-		float fspot = calculate_fspot(l); 
+		float fspot = calculate_fspot(l, luminance); 
 		return fspot;
 	}
 	
 private:
-	float calculate_fspot(vec3 l)
+	float calculate_fspot(vec3 l, float luminance)
 	{
 		if (dot(-l,s) > cos(degrees_to_radians(theta_0))) { return 0; }
-		return pow(dot(-l,s), gradient_rate);
+		return tinybvh::tinybvh_clamp(luminance, 0.0f, 1.0f) * pow(dot(-l,s), gradient_rate);
 	}
 };
 
@@ -66,9 +66,9 @@ public:
 		specular = s;
 	}
 	
-	float calculate_light_interaction(point3 p) override
+	float calculate_light_interaction(point3 p, float luminance) override
 	{
-		return 1;
+		return tinybvh::tinybvh_clamp(luminance, 0.0f, 1.0f);
 	}
 	
 };
