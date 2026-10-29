@@ -79,16 +79,10 @@ void close() {
 
 int main(int argc, char* argv[])
 {
-	// Luce e materiale della scena
-	color lightgray = color(0.75f, 0.75f, 0.75f);
-	color black = color(0.0f, 0.0f, 0.0f);
-	point3 light_position(6.0f, 6.0f, 0.0f);
-	point_light* worldlight = new point_light(light_position, black, lightgray, black);
-
 	// Camera: va inizializzata prima di SDL perche' fornisce le dimensioni della finestra
 	camera cam;
-	cam.lookfrom = point3(0, 2, 10);
-	cam.lookat = point3(0, 0, -1);
+	cam.lookfrom = point3(0.0f, 50.0f, 30.0f);
+	cam.lookat = point3(0.0f, -30.0f, -120.0f);
 
 	cam.aspect_ratio = 16.0f / 9.0f;
 	cam.image_width = 700;
@@ -96,6 +90,19 @@ int main(int argc, char* argv[])
 	cam.vfov = 20;
 
 	cam.initialize();
+
+	// Luce e materiale della scena
+	color lightgray = color(0.75f, 0.75f, 0.75f);
+	color faintred = color(1.0f, 0.55f, 0.55f);
+	color faintblue = color(0.55f, 0.55f, 1.0f);
+	color black = color(0.0f, 0.0f, 0.0f);
+	point3 light_position(6.0f, 6.0f, 0.0f);
+	point_light* worldlight = new point_light(light_position, black, lightgray, black);
+	
+	// Spotlight allineata con camera lookfrom, ma rialzata, puntata sul bunny
+	point3 spotlight_position(30.0f, 60.0f, -60.0f);
+	vec3 spotlight_direction = point3(0.0f, -40.0f, -120.0f) - spotlight_position;
+	spotlight* spot = new spotlight(spotlight_position, spotlight_direction, 20.0f, 0.3f, color(0.05f, 0.05f, 0.05f), color(0.9f, 0.9f, 0.9f), color(0.5f, 0.5f, 0.5f));
 
 	// SDL e SDL_image devono essere inizializzati PRIMA di caricare la texture con IMG_Load
 	if (init(cam.image_width, cam.image_height) == 1) {
@@ -107,24 +114,74 @@ int main(int argc, char* argv[])
 	hittable_list world;
 
 	// Texture Mapping: mesh del gatto con la sua texture
-	mesh* model3d = new mesh("../models/cat.obj", "../models/");
+	// mesh* model3d = new mesh("../models/cat.obj", "../models/");
+	// if (!model3d->loaded) {
+	// 	cout << "Impossibile caricare il modello ../models/cat.obj" << std::endl;
+	// 	close();
+	// 	return 1;
+	// }
+	// texture* cat_texture = new image_texture("../models/texturecat.jpg");
+	// material* m = new material();
+	// m->tex = cat_texture;
+	// m->ka = lightgray;
+	// m->ks = lightgray;
+	
+	mesh* model3d = new mesh("../models/bunny.obj", "../models/");
 	if (!model3d->loaded) {
-		cout << "Impossibile caricare il modello ../models/cat.obj" << std::endl;
+		cout << "Impossibile caricare il modello ../models/bunny2.obj" << std::endl;
 		close();
 		return 1;
 	}
-	texture* cat_texture = new image_texture("../models/texturecat.jpg");
 	material* m = new material();
-	m->tex = cat_texture;
 	m->ka = lightgray;
+	m->kd = lightgray;
 	m->ks = lightgray;
 
 	auto instance_ptr = make_shared<instance>(model3d, m);
-	instance_ptr->scale(1.0f, 1.0f, 1.0f);
-	instance_ptr->rotate_y(90.0f);
-	instance_ptr->rotate_z(90.0f);
+	instance_ptr->scale(10.0f, 10.0f, 10.0f);
+	instance_ptr->rotate_y(8.0f);
+	instance_ptr->rotate_z(0.0f);
 	instance_ptr->translate(0.0f, -40.0f, -120.0f);
 	world.add(instance_ptr);
+	
+	// Sfere
+	material* red_sphere_mat = new material();
+	red_sphere_mat->ka = faintred;
+	red_sphere_mat->kd = faintred;
+	red_sphere_mat->ks = faintred;
+	
+	material* blue_sphere_mat = new material();
+	blue_sphere_mat->ka = faintblue;
+	blue_sphere_mat->kd = faintblue;
+	blue_sphere_mat->ks = faintblue;
+	
+	auto red_sphere = make_shared<sphere>(point3(-27.0f, -30.0f,-118.0f), 10.0f, red_sphere_mat);
+	auto blue_sphere = make_shared<sphere>(point3(23.0f, -32.0f, -115.0f), 8.0f, blue_sphere_mat);
+	world.add(red_sphere);
+	world.add(blue_sphere);
+
+	// Stanza: pavimento sotto il bunny (y = -40) e parete a 90° dietro il bunny (z = -128)
+	texture* wallfloor_texture = new image_texture("../models/texturecheckerboard.png");
+	material* floor_mat = new material();
+	floor_mat->tex = wallfloor_texture;
+	floor_mat->ka = color(0.2f, 0.2f, 0.2f);
+	floor_mat->kd = color(0.5f, 0.5f, 0.5f);
+	floor_mat->ks = color(0.1f, 0.1f, 0.1f);
+	floor_mat->alpha = 10.0f;
+
+	material* wall_mat = new material();
+	wall_mat->tex = wallfloor_texture;
+	wall_mat->ka = color(0.2f, 0.2f, 0.22f);
+	wall_mat->kd = color(0.6f, 0.6f, 0.65f);
+	wall_mat->ks = color(0.1f, 0.1f, 0.1f);
+	wall_mat->alpha = 10.0f;
+
+	auto floor_plane = make_shared<plane>(point3(0.0f, -40.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f), floor_mat);
+	auto back_wall = make_shared<plane>(point3(0.0f, 0.0f, -128.0f), vec3(0.0f, 0.0f, 1.0f), wall_mat);
+	world.add(floor_plane);
+	world.add(back_wall);
+	
+	
 
 	cout << "Image Resolution: " << cam.image_width << "x" << cam.image_height << "\n255\n";
 
@@ -136,8 +193,8 @@ int main(int argc, char* argv[])
 
 	auto start = std::chrono::steady_clock::now();
 
-	cam.parallel_render(world, *worldlight);
-	//cam.render(world, *worldlight);
+	cam.parallel_render(world, *spot);
+	//cam.render(world, *spot);
 
 	auto end = std::chrono::steady_clock::now();
 	double dif = std::chrono::duration<double>(end - start).count();
@@ -177,9 +234,12 @@ int main(int argc, char* argv[])
 
 	close();
 
-	delete cat_texture;
+	//delete cat_texture;
 	delete m;
+	delete floor_mat;
+	delete wall_mat;
 	delete model3d;
 	delete worldlight;
+	delete spot;
 	return 0;
 }
