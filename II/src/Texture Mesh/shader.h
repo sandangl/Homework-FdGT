@@ -48,7 +48,7 @@ color phong_shading(light& light, hit_record& hr, point3& camera_pos) {
 		return ambient;
 }
 
-color ambient_shading(point_light &light, hit_record &hr) {
+color ambient_shading(light &light, hit_record &hr) {
 	color ambient(0.0f, 0.0f, 0.0f);
 	
 	ambient = hr.m->ka * light.ambient;

@@ -82,7 +82,7 @@ public:
 	}
 
 
-	void render(hittable_list& world, point_light& worldlight) {
+	void render(hittable_list& world, light& worldlight) {
 		for (int j = 0; j < image_height; ++j) {
 			std::clog << "\rScanlines remaining: " << (image_height - j) << ' ' << std::flush;
 			for (int i = 0; i < image_width; ++i) {
@@ -101,7 +101,7 @@ public:
 		SDL_RenderPresent(renderer);
 	}
 
-	void parallel_render(hittable_list& world, point_light& worldlight) {
+	void parallel_render(hittable_list& world, light& worldlight) {
 		vector<color> matrix(image_width * image_height);
 
 		parallel_for(int(0), image_height, [&](int j) {
@@ -154,7 +154,7 @@ private:
 		return (px * pixel_delta_u) + (py * pixel_delta_v);
 	}
 
-	color ray_color(const ray& r, hittable_list& world, point_light& worldlight) {
+	color ray_color(const ray& r, hittable_list& world, light& worldlight) {
 		hit_record rec;
 
 		if (world.hit(r, interval(0, infinity), rec)) {
