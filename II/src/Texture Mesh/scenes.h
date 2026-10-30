@@ -14,7 +14,6 @@
 #include "material.h"
 #include "texture.h"
 #include "sphere.h"
-#include "cylinder.h"
 #include "geometry.h"
 #include "instance.h"
 
@@ -335,6 +334,87 @@ inline SceneData create_scene_6_original_cat() {
     cat_inst->rotate_z(90.0f);
     cat_inst->translate(0.0f, -40.0f, -120.0f);
     s.world.add(cat_inst);
+
+    return s;
+}
+
+inline SceneData create_toon_scene() {
+    SceneData s;
+    color lightgray(0.75f, 0.75f, 0.75f);
+    color faintred(1.0f, 0.55f, 0.55f);
+    color faintblue(0.55f, 0.55f, 1.0f);
+
+    // Camera setup for toon scene matching slide 4
+    s.cam.aspect_ratio = 16.0f / 9.0f;
+    s.cam.image_width = 700;
+    s.cam.samples_per_pixel = 1;
+    s.cam.vfov = 20;
+    s.cam.lookfrom = point3(0.0f, 50.0f, 30.0f);
+    s.cam.lookat = point3(0.0f, -30.0f, -120.0f);
+
+    // Directional light (sun) from front-left-above casting shadows backwards-right
+    directional_light* sun = new directional_light(
+        vec3(-0.31f, 0.33f, 0.89f),
+        color(0.05f, 0.05f, 0.05f),
+        color(0.85f, 0.85f, 0.85f),
+        color(0.85f, 0.85f, 0.85f)
+    );
+    s.lights.add(sun);
+    s.allocated_lights.push_back(sun);
+
+    // Center object: Stanford Bunny
+    mesh* bunny = new mesh("../models/bunny.obj", "../models/");
+    if (!bunny->loaded) {
+        std::cerr << "Impossibile caricare ../models/bunny.obj" << std::endl;
+    }
+    s.meshes.push_back(bunny);
+
+    material* bunny_mat = new material();
+    bunny_mat->ka = lightgray;
+    bunny_mat->kd = lightgray;
+    bunny_mat->ks = lightgray;
+    bunny_mat->is_toon = true;
+    s.materials.push_back(bunny_mat);
+
+    auto bunny_inst = make_shared<instance>(bunny, bunny_mat);
+    bunny_inst->scale(10.0f, 10.0f, 10.0f);
+    bunny_inst->rotate_y(8.0f);
+    bunny_inst->translate(0.0f, -40.0f, -120.0f);
+    s.world.add(bunny_inst);
+
+    // Left object: Red sphere
+    material* red_mat = new material();
+    red_mat->ka = faintred;
+    red_mat->kd = faintred;
+    red_mat->ks = faintred;
+    red_mat->is_toon = true;
+    s.materials.push_back(red_mat);
+
+    auto red_sphere = make_shared<sphere>(point3(-27.0f, -30.0f, -118.0f), 10.0f, red_mat);
+    s.world.add(red_sphere);
+
+    // Right object: Blue sphere
+    material* blue_mat = new material();
+    blue_mat->ka = faintblue;
+    blue_mat->kd = faintblue;
+    blue_mat->ks = faintblue;
+    blue_mat->is_toon = true;
+    s.materials.push_back(blue_mat);
+
+    auto blue_sphere = make_shared<sphere>(point3(23.0f, -32.0f, -115.0f), 8.0f, blue_mat);
+    s.world.add(blue_sphere);
+
+    // Floor plane: uniform light gray without checkerboard, no back wall
+    material* floor_mat = new material();
+    floor_mat->ka = color(0.2f, 0.2f, 0.2f);
+    floor_mat->kd = color(0.7f, 0.7f, 0.7f);
+    floor_mat->ks = color(0.1f, 0.1f, 0.1f);
+    floor_mat->alpha = 10.0f;
+    floor_mat->is_toon = false; // Turn off toon on floor to avoid dark horizon
+    s.materials.push_back(floor_mat);
+
+    auto floor_plane = make_shared<plane>(point3(0.0f, -40.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f), floor_mat);
+    s.world.add(floor_plane);
 
     return s;
 }

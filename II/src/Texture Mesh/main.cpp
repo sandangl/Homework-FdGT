@@ -88,6 +88,7 @@ int main(int argc, char* argv[])
 	// SceneData scene = create_scene_4_extended_light_only();
 	// SceneData scene = create_scene_5_all_lights();
 	// SceneData scene = create_scene_6_original_cat();
+	SceneData scene = create_toon_scene();
 
 	camera& cam = scene.cam;
 	cam.initialize();
