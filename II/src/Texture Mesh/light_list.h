@@ -16,11 +16,37 @@ public:
   light_list() {}
   light_list(light* source) { add(source); }
   light_list(light& source) { add(&source); }
+  light_list(light_list* other)
+  {
+    for (auto source : other->sources)
+    {
+      add(source);
+    };
+  }
+  light_list(light_list& other) { 
+    for (auto source : other.sources)
+    {
+      add(source);
+    };
+  }
 
   void clear() { sources.clear(); }
 
   void add(light* source) {
     sources.push_back(source);
+  }
+  void add(light_list* other) {
+    for (auto source : other->sources)
+    {
+      add(source);
+    };
+  }
+  
+  void add(light_list other) {
+    for (auto source : other.sources)
+    {
+      add(source);
+    };
   }
 };
 

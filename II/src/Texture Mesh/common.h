@@ -50,4 +50,13 @@ inline vec3 lerp(vec3& a, vec3& b, float t) {
 inline float ffmin(float a, float b) { return a < b ? a : b; }
 inline float ffmax(float a, float b) { return a > b ? a : b; }
 
+inline vec3 vvmax(vec3 a, vec3 b)
+{
+  return vec3(ffmax(a.x(), b.x()), ffmax(a.y(), b.y()), ffmax(a.z(), b.z()));
+}
+inline vec3 vvmin(vec3 a, vec3 b)
+{
+  return vec3(ffmin(a.x(), b.x()), ffmin(a.y(), b.y()), ffmin(a.z(), b.z()));
+}
+
 #endif
