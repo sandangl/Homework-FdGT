@@ -24,7 +24,7 @@ color phong_shading(light& light, hit_record& hr, point3& camera_pos) {
 
 	ambient = hr.m->ka * light.ambient;
 
-	vec3 L = unit_vector(light.position - hr.p);
+	vec3 L = light.get_direction(hr.p);
 	float LDotN = std::max(dot(L, hr.normal), 0.0f);
 
 	if (LDotN > 0.0f) {

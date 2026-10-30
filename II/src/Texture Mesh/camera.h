@@ -197,8 +197,9 @@ private:
         int num_sources =  (int) lights.sources.size();
         for (light* source : lights.sources)
         {
-            ray shadow_ray(rec.p, unit_vector(source->position - rec.p));
-            float closest_light = (rec.p - source->position).length();
+            vec3 l = source->get_direction(rec.p);
+            float closest_light = source->get_distance(rec.p);
+            ray shadow_ray(rec.p, l);
 
             if (world.hit_shadow(shadow_ray, interval(0.01f, closest_light)))
                 pixel_color += ambient_shading(*source, rec) /num_sources;

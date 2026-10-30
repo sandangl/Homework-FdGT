@@ -20,6 +20,16 @@ public:
 	
 	virtual ~light() = default;
 	
+	virtual vec3 get_direction(const point3& p) const
+	{
+		return unit_vector(position - p);
+	}
+
+	virtual float get_distance(const point3& p) const
+	{
+		return (position - p).length();
+	}
+
 	virtual float calculate_light_interaction(point3 p)
 	{
 		vec3 l = unit_vector(p - position);
@@ -77,6 +87,35 @@ private:
 			return pow(t, gradient_rate);	//outer cone: exponential decay
 		}
 		return 0.0f;
+	}
+};
+
+class directional_light : public light
+{
+public:
+	vec3 dir; // vector L pointing towards the light source (slides: "l costante")
+	
+	directional_light() {}
+	directional_light(vec3 direction_to_light, color a, color d, color s) {
+		dir = unit_vector(direction_to_light);
+		ambient = a;
+		diffuse = d;
+		specular = s;
+	}
+	
+	vec3 get_direction(const point3& p) const override
+	{
+		return dir; // constant unit vector towards light
+	}
+
+	float get_distance(const point3& p) const override
+	{
+		return infinity;
+	}
+
+	float calculate_light_interaction(point3 p) override
+	{
+		return 1.0f;
 	}
 };
 
