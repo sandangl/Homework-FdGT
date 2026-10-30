@@ -1,6 +1,7 @@
 #ifndef LIGHT_LIST_H
 #define LIGHT_LIST_H
 
+
 #include "light.h"
 
 #include <memory>
@@ -8,6 +9,8 @@
 
 using std::shared_ptr;
 using std::make_shared;
+
+class ext_light;
 
 class light_list {
 public:
@@ -48,6 +51,9 @@ public:
       add(source);
     };
   }
+  
+  void add(ext_light* extended);
+  void add(ext_light& extended);
 };
 
 #endif
