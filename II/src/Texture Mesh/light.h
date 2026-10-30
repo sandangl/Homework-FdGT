@@ -19,7 +19,18 @@ public:
 	float att_c;
 	
 	virtual ~light() = default;
-	virtual float calculate_light_interaction(point3 p) = 0;
+	
+	virtual float calculate_light_interaction(point3 p)
+	{
+		vec3 l = unit_vector(p - position);
+		return calculate_fspot(l);
+	}
+
+private:
+	virtual float calculate_fspot(vec3 l)
+	{
+		return 1.0f;
+	}
 };
 
 class spotlight : public light{
@@ -47,14 +58,8 @@ public:
 		specular = s_col;
 	}
 	
-	float calculate_light_interaction(point3 p) override
-	{
-		vec3 l = unit_vector(p - position);
-		return calculate_fspot(l);
-	}
-	
 private:
-	float calculate_fspot(vec3 l)
+	float calculate_fspot(vec3 l) override
 	{	
 		float cos_theta = dot(l, s);
 		float cos_1 = cos(degrees_to_radians(theta_1));
@@ -87,7 +92,6 @@ public:
 	
 	float calculate_light_interaction(point3 p) override
 	{
-		return 1;
+		return 1.0f;
 	}
-	
 };
