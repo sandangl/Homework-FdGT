@@ -49,20 +49,20 @@ public:
 	vec3 s;
 	float theta_0;
 	float theta_1;
-	float gradient_rate;
+	float decaying_speed;
 	
 	spotlight() {}
-	spotlight(point3 p_s, vec3 direction, float aperture, float smoothness, float gradient = 2.0f)
-		: spotlight(p_s, direction, aperture, smoothness, color(0.05f, 0.05f, 0.05f), color(0.9f, 0.9f, 0.9f), color(0.5f, 0.5f, 0.5f), gradient) {}
+	spotlight(point3 p_s, vec3 direction, float aperture, float smoothness, float speed = 30.0f)
+		: spotlight(p_s, direction, aperture, smoothness, color(0.05f, 0.05f, 0.05f), color(0.9f, 0.9f, 0.9f), color(0.5f, 0.5f, 0.5f), speed) {}
 
-	spotlight(point3 p_s, vec3 direction, float aperture, float smoothness, color a, color d, color s_col, float gradient = 2.0f)
+	spotlight(point3 p_s, vec3 direction, float aperture, float smoothness, color a, color d, color s_col, float speed = 30.0f)
 	{
 		position = p_s;
 		this->p_s = p_s;
 		s = unit_vector(direction);
 		theta_0 = aperture;
 		theta_1 = tinybvh::tinybvh_clamp(smoothness, 0.0f, 1.0f) * theta_0;
-		gradient_rate = gradient;
+		decaying_speed = speed;
 		ambient = a;
 		diffuse = d;
 		specular = s_col;
@@ -74,17 +74,13 @@ private:
 		float cos_theta = dot(l, s);
 		float cos_1 = cos(degrees_to_radians(theta_1));
 		float cos_0 = cos(degrees_to_radians(theta_0));
-		float t = 1;
-		
-		if (theta_0 != theta_1) {
-			t = (cos_theta - cos_0) / (cos_1 - cos_0);
-		}
+		float t = pow(cos_theta, decaying_speed);
 		
 		if (cos_theta > cos_1) { 
 			return t;	//inner cone: linear decay
 		}
 		if (cos_theta > cos_0) {
-			return pow(t, gradient_rate);	//outer cone: exponential decay
+			return t*t;	//outer cone: exponential decay
 		}
 		return 0.0f;
 	}
