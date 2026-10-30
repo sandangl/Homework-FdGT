@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="tests (Release)" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="TextureMesh" TARGET_NAME="tests" CONFIG_NAME="Release" RUN_PATH="/usr/bin/wine" PROGRAM_PARAMS="tests.exe" WORKING_DIR="$CMakeCurrentBuildDir$">
+    <method v="2">
+      <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" methodId="CMakeRunner.BuildBeforeRunTask" />
+    </method>
+  </configuration>
+</component>

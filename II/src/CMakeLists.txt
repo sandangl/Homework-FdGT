@@ -22,6 +22,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_executable(TextureMesh
     "Texture Mesh/main.cpp"
+        "Texture Mesh/scenes.h"
+        "Texture Mesh/ext_light.h"
         "Texture Mesh/light.h"
         "Texture Mesh/shader.h"
         "Texture Mesh/light_list.h"
@@ -147,3 +149,19 @@ if(RUNTIME_DLLS)
     COMMENT "Deploying runtime DLLs to binary directory"
   )
 endif()
+
+# Unit tests target
+add_executable(tests
+    "tests/main.cpp"
+    "tests/spotlight_tests.cpp"
+)
+
+if(WINE_BIN)
+  set_target_properties(tests PROPERTIES CROSSCOMPILING_EMULATOR "${WINE_BIN}")
+endif()
+
+target_link_options(tests PRIVATE -static-libgcc -static-libstdc++)
+target_include_directories(tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Texture Mesh")
+target_include_directories(tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/tests")
+
