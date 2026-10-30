@@ -2,6 +2,7 @@
 #include <iostream>
 #include <time.h>
 #include <algorithm>
+#include <cmath>
 #include "camera.h"
 #include "light.h"
 #include "material.h"
@@ -42,6 +43,43 @@ color phong_shading(light& light, hit_record& hr, point3& camera_pos) {
 		
 		float f = light.calculate_light_interaction(hr.p);
 
+		return ambient + f * (diffuse + specular);
+	}
+	else
+		return ambient;
+}
+
+color toon_shading(light& light, hit_record& hr, point3& camera_pos, const int K = 3, const float epsilon = 0.26f) {
+	int k_val = (hr.m != nullptr && hr.m->K > 0) ? hr.m->K : K;
+	float eps = (hr.m != nullptr) ? hr.m->epsilon : epsilon;
+
+	// Contorno (silhouette): se la superficie e' vista di taglio (|n . v| < eps), pixel nero
+	vec3 V = unit_vector(camera_pos - hr.p);
+	float NdotV = std::fabs(dot(V, hr.normal));
+	if (NdotV < eps) {
+		return color(0.0f, 0.0f, 0.0f);
+	}
+
+	color ambient = hr.m->ka * light.ambient;
+	color diffuse(0.0f, 0.0f, 0.0f);
+	color specular(0.0f, 0.0f, 0.0f);
+
+	vec3 L = light.get_direction(hr.p);
+	float LDotN = std::max(dot(L, hr.normal), 0.0f);
+
+	if (LDotN > 0.0f) {
+		color kd = (hr.m->tex != nullptr) ? hr.m->tex->value(hr.u, hr.v, hr.p) : hr.m->kd;
+		float d = std::ceil((float) k_val * LDotN) / ((float) k_val);
+		diffuse = kd * light.diffuse * d;
+
+		vec3 R = reflect(L, hr.normal);
+		float VDotR = std::max(dot(V, unit_vector(R)), 0.0f);
+
+		// Macchia speculare piena se r . v supera la soglia (slide: per esempio 0.97), altrimenti nulla
+		float spec_factor = (VDotR > 0.95f) ? 1.0f : 0.0f;
+		specular = hr.m->ks * light.specular * spec_factor;
+
+		float f = light.calculate_light_interaction(hr.p);
 		return ambient + f * (diffuse + specular);
 	}
 	else

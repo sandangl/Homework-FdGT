@@ -11,6 +11,10 @@ public:
 	color ks;
 	float alpha;
 
+	bool is_toon = false;
+	int K = 3;
+	float epsilon = 0.26f;
+
 	// Texture opzionale: se e' presente sostituisce kd nel termine diffuso (vedi shader.h).
 	// NB: il membro non puo' chiamarsi "texture" come il tipo (g++: "changes meaning of 'texture'").
 	texture* tex = nullptr;
