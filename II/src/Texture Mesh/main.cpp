@@ -110,7 +110,7 @@ int main(int argc, char* argv[])
 
 	auto start = std::chrono::steady_clock::now();
 
-	cam.parallel_render(scene.world, scene.lights, true);
+	cam.parallel_render(scene.world, scene.lights);
 	//cam.render(scene.world, scene.lights);
 
 	auto end = std::chrono::steady_clock::now();

@@ -73,7 +73,7 @@ color toon_shading(light& light, hit_record& hr, point3& camera_pos, const int K
 		diffuse = kd * light.diffuse * d;
 
 		vec3 R = reflect(L, hr.normal);
-		float VDotR = std::max(dot(V, unit_vector(R)), 0.0f);
+		float VDotR = std::abs(dot(V, unit_vector(R)));
 
 		// Macchia speculare piena se r . v supera la soglia (slide: per esempio 0.97), altrimenti nulla
 		float spec_factor = (VDotR > 0.95f) ? 1.0f : 0.0f;

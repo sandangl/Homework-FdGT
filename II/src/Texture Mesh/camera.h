@@ -87,18 +87,18 @@ public:
         pixel00_loc = viewport_upper_left + 0.5f * (pixel_delta_u + pixel_delta_v);
     }
 
-    void render(hittable_list& world, light& light, const bool toon = false, const int K = 3)
+    void render(hittable_list& world, light& light, const int K = 3)
     {
         light_list lights(light);
-        render(world, lights, toon, K);
+        render(world, lights, K);
     }
-    void parallel_render(hittable_list& world, light& light, const bool toon = false, const int K = 3)
+    void parallel_render(hittable_list& world, light& light, const int K = 3)
     {
         light_list lights(light);
-        parallel_render(world, lights, toon, K);
+        parallel_render(world, lights, K);
     }
 
-    void render(hittable_list& world, light_list& lights, const bool toon = false, const int K = 3)
+    void render(hittable_list& world, light_list& lights, const int K = 3)
     {
         for (int j = 0; j < image_height; ++j)
         {
@@ -110,7 +110,7 @@ public:
                 for (int sample = 0; sample < samples_per_pixel; ++sample)
                 {
                     ray r = get_ray(i, j);
-                    pixel_color += ray_color(r, world, lights, toon, K);
+                    pixel_color += ray_color(r, world, lights, K);
                 }
 
                 pixel_color /= samples_per_pixel;
@@ -121,7 +121,7 @@ public:
         SDL_RenderPresent(renderer);
     }
 
-    void parallel_render(hittable_list& world, light_list& lights, const bool toon = false, const int K = 3)
+    void parallel_render(hittable_list& world, light_list& lights, const int K = 3)
     {
         vector<color> matrix(image_width * image_height);
 
@@ -134,7 +134,7 @@ public:
                 for (int sample = 0; sample < samples_per_pixel; ++sample)
                 {
                     ray r = get_ray(i, j);
-                    pixel_color += ray_color(r, world, lights, toon, K);
+                    pixel_color += ray_color(r, world, lights, K);
                 }
 
                 pixel_color /= samples_per_pixel;
@@ -182,7 +182,7 @@ private:
         return (px * pixel_delta_u) + (py * pixel_delta_v);
     }
 
-    color ray_color(const ray& r, hittable_list& world, light_list& lights, const bool toon = false, const int K = 3)
+    color ray_color(const ray& r, hittable_list& world, light_list& lights, const int K = 3)
     {
         hit_record rec;
 
@@ -194,7 +194,7 @@ private:
         }
 
         // Toon contour check: if toon is enabled for this material and |n . v| < epsilon, pixel is black
-        if (toon && (rec.m == nullptr || rec.m->is_toon))
+        if (rec.m == nullptr || rec.m->is_toon)
         {
             vec3 V = unit_vector(camera_center - rec.p);
             float eps = (rec.m != nullptr) ? rec.m->epsilon : 0.26f;
@@ -215,7 +215,7 @@ private:
             if (world.hit_shadow(shadow_ray, interval(0.01f, closest_light)))
                 pixel_color += ambient_shading(*source, rec) /num_sources;
             else
-                if (toon && (rec.m == nullptr || rec.m->is_toon))
+                if (rec.m == nullptr || rec.m->is_toon)
                 {
                     pixel_color += toon_shading(*source, rec, camera_center, K) / num_sources;
                 } else
