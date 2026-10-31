@@ -418,3 +418,129 @@ inline SceneData create_toon_scene() {
 
     return s;
 }
+
+// Common objects for slide 9 scenes: Stanford Bunny, red sphere, blue sphere, curved ground sphere
+inline void setup_slide9_objects(SceneData& s) {
+    color lightgray(0.75f, 0.75f, 0.75f);
+    color faintred(1.0f, 0.55f, 0.55f);
+    color faintblue(0.55f, 0.55f, 1.0f);
+
+    // Center object: Stanford Bunny
+    mesh* bunny = new mesh("../models/bunny.obj", "../models/");
+    if (!bunny->loaded) {
+        std::cerr << "Impossibile caricare ../models/bunny.obj" << std::endl;
+    }
+    s.meshes.push_back(bunny);
+
+    material* bunny_mat = new material();
+    bunny_mat->ka = lightgray;
+    bunny_mat->kd = lightgray;
+    bunny_mat->ks = lightgray;
+    s.materials.push_back(bunny_mat);
+
+    auto bunny_inst = make_shared<instance>(bunny, bunny_mat);
+    bunny_inst->scale(10.0f, 10.0f, 10.0f);
+    bunny_inst->rotate_y(8.0f);
+    bunny_inst->translate(0.0f, -48.1f, -120.0f);
+    s.world.add(bunny_inst);
+
+    // Left object: Red sphere (tangent to ground sphere at -48.6)
+    material* red_mat = new material();
+    red_mat->ka = faintred;
+    red_mat->kd = faintred;
+    red_mat->ks = faintred;
+    s.materials.push_back(red_mat);
+
+    auto red_sphere = make_shared<sphere>(point3(-27.0f, -38.4f, -118.0f), 10.0f, red_mat);
+    s.world.add(red_sphere);
+
+    // Right object: Blue sphere (tangent to ground sphere at -47.8)
+    material* blue_mat = new material();
+    blue_mat->ka = faintblue;
+    blue_mat->kd = faintblue;
+    blue_mat->ks = faintblue;
+    s.materials.push_back(blue_mat);
+
+    auto blue_sphere = make_shared<sphere>(point3(23.0f, -39.6f, -115.0f), 8.0f, blue_mat);
+    s.world.add(blue_sphere);
+
+    // Curved ground: large sphere creating the curved horizon
+    material* ground_mat = new material();
+    ground_mat->ka = color(0.2f, 0.2f, 0.2f);
+    ground_mat->kd = color(0.7f, 0.7f, 0.7f);
+    ground_mat->ks = color(0.1f, 0.1f, 0.1f);
+    ground_mat->alpha = 10.0f;
+    s.materials.push_back(ground_mat);
+
+    auto ground_sphere = make_shared<sphere>(point3(0.0f, -440.0f, -40.0f), 400.0f, ground_mat);
+    s.world.add(ground_sphere);
+}
+
+// Scene 1: Sky equirectangular texture with directional light from estimated sun
+inline SceneData create_sky_scene() {
+    SceneData s;
+    setup_slide9_objects(s);
+
+    color lightgray(0.75f, 0.75f, 0.75f);
+    color ambient_light(0.25f, 0.25f, 0.25f);
+
+    // Camera setup
+    s.cam.aspect_ratio = 16.0f / 9.0f;
+    s.cam.image_width = 700;
+    s.cam.samples_per_pixel = 1;
+    s.cam.vfov = 20;
+    s.cam.lookfrom = point3(0.0f, 50.0f, 30.0f);
+    s.cam.lookat = point3(0.0f, -30.0f, -120.0f);
+
+    // Sky texture: prefers upscaled 2048x1024 texture if present
+    const char* sky_path = "../models/canyon_sky.png";
+    FILE* test_f = fopen(sky_path, "rb");
+    if (test_f) { fclose(test_f); } else { sky_path = "../models/canyon_sky_small.png"; }
+
+    environment_texture* sky_tex = new environment_texture(sky_path);
+    s.cam.environment_texture_sky = sky_tex;
+    s.textures.push_back(sky_tex);
+
+    // Directional light from estimated sun direction
+    directional_light* dir_light = new directional_light(sky_tex->sun_direction, ambient_light, lightgray, lightgray);
+    s.lights.add(dir_light);
+    s.allocated_lights.push_back(dir_light);
+
+    // Print sun analysis
+    float true_x = 0.0f, true_y = 0.0f;
+    vec3 true_sun_dir = sky_tex->compute_ground_truth_sun(true_x, true_y);
+    float err_deg = sky_tex->angular_error_degrees(true_sun_dir);
+    std::cout << "Sky Texture: " << sky_path << " (" << sky_tex->imageWidth << "x" << sky_tex->imageHeight << ")" << std::endl;
+    std::cout << "SGA Sun Pixel: (" << sky_tex->sun_pixel_x << ", " << sky_tex->sun_pixel_y << ")" << std::endl;
+    std::cout << "True Sun Centroid: (" << true_x << ", " << true_y << ")" << std::endl;
+    std::cout << "Sun Direction Angular Error: " << err_deg << " deg" << std::endl;
+
+    return s;
+}
+
+// Scene 2: Point light and default gradient background (no sky texture)
+inline SceneData create_pointlight_and_gradient_scene() {
+    SceneData s;
+    setup_slide9_objects(s);
+
+    color lightgray(0.75f, 0.75f, 0.75f);
+    color ambient_light(0.25f, 0.25f, 0.25f);
+
+    // Camera setup (environment_texture_sky = nullptr -> camera renders default sky gradient)
+    s.cam.aspect_ratio = 16.0f / 9.0f;
+    s.cam.image_width = 700;
+    s.cam.samples_per_pixel = 1;
+    s.cam.vfov = 20;
+    s.cam.lookfrom = point3(0.0f, 50.0f, 30.0f);
+    s.cam.lookat = point3(0.0f, -30.0f, -120.0f);
+    s.cam.environment_texture_sky = nullptr;
+
+    // Point light with ambient component
+    point_light* pt_light = new point_light(point3(20.0f, 50.0f, -40.0f), ambient_light, lightgray, lightgray);
+    s.lights.add(pt_light);
+    s.allocated_lights.push_back(pt_light);
+
+    return s;
+}
+
+
