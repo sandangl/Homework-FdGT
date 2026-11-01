@@ -6,9 +6,6 @@ Cosa ho implementato:
      - Per bordo netto (smoothness = 1.0, theta_1 = theta_0 = 22 gradi): f_spot e' attivo all'interno del cono e cade a zero all'esterno.
      - Per bordo sfumato (theta_i = 12 gradi, theta_o = 24 gradi, smoothness = 0.5): f_spot degrada gradualmente dal cono interno al cono esterno secondo il decadimento angolare.
    - Supporto completo nei test unitari (14/14 superati in tests.exe).
-   - Render prodotti:
-     - 1_spotlight_netto.bmp: scena con bordo netto (theta = 22 gradi)
-     - 1_spotlight_sfumato.bmp: scena con bordo sfumato (theta_i = 12 gradi, theta_o = 24 gradi)
 
 2. Più sorgenti di luce e ombre morbide (Homework 3):
    - Estensione della gestione luci tramite `light_list`, in cui convivono tipi differenti di luce:
@@ -17,11 +14,9 @@ Cosa ho implementato:
      - Faretto spot (`spotlight`)
      - Luce estesa rettangolare con campionamento stocastico Monte Carlo (`ext_light` / `point_ext_light`)
    - Shading multi-luce con shadow ray indipendente per ogni sorgente, visibilita' Vi, attenuazione proporzionale al numero di sorgenti per evitare saturazione al bianco, e componente ambientale calcolata una volta sola per scena.
-   - Render tre luci colorate:
-     - 3_tre_luci_colorate.bmp: tre luci puntiformi (rosso, verde, blu) poste in posizioni distinte; le ombre proiettate sono cromatiche poiche' ciascuna ombra e' illuminata dalle altre due sorgenti (manca di un solo colore primario, generando ombre ciano, magenta e giallo).
-     - 3_tre_spotlights.bmp: render comparativo con 3 faretti spot puntati sul coniglio.
-   - Ombre morbide con luce estesa:
+     - Ombre morbide con luce estesa:
      Misurazione dei tempi di calcolo (risoluzione 700x393, multi-threaded PPL):
+     Le luce estesa è stata implementata come una nuvola probabilistica bidimensionale (quadrilatero), generando a caso N luci puntiformi.
      - Luce puntiforme (baseline): 0.042 s -> 3_ombre_morbide_puntiforme.bmp
      - Luce estesa con N = 1 campione: 0.042 s -> 3_ombre_morbide_N1.bmp
      - Luce estesa con N = 16 campioni: 0.221 s -> 3_ombre_morbide_N16.bmp
@@ -32,12 +27,7 @@ Cosa ho implementato:
    - Flag `is_toon`, livelli `K` e soglia `epsilon` integrati nella classe `material` (con costruttori dedicati) e sottoclasse `toon_material`.
    - Quantizzazione del termine diffuso su K livelli: d = ceil(K * max(n . l, 0)) / K.
    - Riflesso speculare a macchia netta: piena se r . v > 0.95, altrimenti nulla.
-   - Contorno nero (silhouette) calcolato valutando |n . v| < epsilon. Disabilitato sul piano del pavimento tramite flag per evitare l'annerimento dell'orizzonte.
-   - Render prodotti:
-     - 4_toon_phong.bmp: baseline con shading standard di Phong
-     - 4_toon_K2.bmp: toon shading con K = 2 livelli, epsilon = 0.26
-     - 4_toon_K3.bmp: toon shading con K = 3 livelli, epsilon = 0.26
-     - 4_toon_K5.bmp: toon shading con K = 5 livelli, epsilon = 0.26
+   - Contorno nero (silhouette) calcolato valutando |n · v| < epsilon. Disabilitato sul piano del pavimento tramite flag per evitare l'annerimento dell'orizzonte.
    - Risposta alla domanda: "Dove sbaglia il contorno calcolato con |n · v|?"
      Il test |n · v| < epsilon fallisce sulle superfici piane/poligonali viste radenti (come un pavimento o facce inclinate di taglio), dove la normale e' quasi perpendicolare alla vista anche se il punto non e' un contorno esterno della sagoma (silhouette); inoltre, lo spessore della linea in pixel non e' costante ma dipende dalla curvatura locale della geometria e dalla distanza della camera, e non rileva i bordi di occlusione interni fra parti diverse dello stesso modello aventi normali simili.
 
@@ -50,9 +40,6 @@ Cosa ho implementato:
      - Centroide reale del sole: (2450.06, 724.241)
      - Errore angolare di puntamento: 5.519 gradi
    - Luce direzionale allineata automaticamente al sole stimato con ombre coerenti alla visuale.
-   - Render prodotti:
-     - 9_cielo_gradiente.bmp: cielo con gradiente di default e luce puntiforme
-     - 9_cielo_texture.bmp: cielo reale a 360 gradi con texture e luce direzionale dal sole
 
 
 Cosa non funziona:
