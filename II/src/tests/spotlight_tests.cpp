@@ -57,45 +57,46 @@ static void test_on_axis_peak_intensity() {
 
 static void test_inner_cone_linear_decay() {
   // theta_0 = 30 deg, smoothness = 0.6 -> theta_1 = 18 deg
-  float speed = 15.0f;
-  spotlight spot(point3(0, 0, 0), vec3(0, 0, 1), 30.0f, 0.6f, speed);
+  spotlight spot(point3(0, 0, 0), vec3(0, 0, 1), 30.0f, 0.6f);
 
-  // Sample at 10 degrees (< theta_1: inside inner cone)
+  // Sample at 10 degrees (< theta_1: inside inner cone -> full intensity 1.0)
   float angle = 10.0f;
   point3 p = make_sample_point(point3(0, 0, 0), angle, 5.0f);
   float f = spot.calculate_light_interaction(p);
 
-  float expected_t = std::pow(std::cos(degrees_to_radians(angle)), speed);
-  expect_near(f, expected_t);
+  expect_near(f, 1.0f);
 }
 
 static void test_inner_cone_monotonic_decrease() {
-  spotlight spot(point3(0, 0, 0), vec3(0, 0, 1), 40.0f, 0.8f, 20.0f);
+  // theta_0 = 40 deg, smoothness = 0.5 -> theta_1 = 20 deg
+  spotlight spot(point3(0, 0, 0), vec3(0, 0, 1), 40.0f, 0.5f);
 
   float f_center = spot.calculate_light_interaction(make_sample_point(point3(0, 0, 0), 0.0f));
-  float f_5deg   = spot.calculate_light_interaction(make_sample_point(point3(0, 0, 0), 5.0f));
-  float f_15deg  = spot.calculate_light_interaction(make_sample_point(point3(0, 0, 0), 15.0f));
+  float f_10deg  = spot.calculate_light_interaction(make_sample_point(point3(0, 0, 0), 10.0f));
   float f_25deg  = spot.calculate_light_interaction(make_sample_point(point3(0, 0, 0), 25.0f));
+  float f_35deg  = spot.calculate_light_interaction(make_sample_point(point3(0, 0, 0), 35.0f));
 
-  expect_true(f_center > f_5deg, "center > 5deg");
-  expect_true(f_5deg > f_15deg, "5deg > 15deg");
-  expect_true(f_15deg > f_25deg, "15deg > 25deg");
+  expect_near(f_center, 1.0f);
+  expect_near(f_10deg, 1.0f);
+  expect_true(f_10deg > f_25deg, "10deg > 25deg");
+  expect_true(f_25deg > f_35deg, "25deg > 35deg");
 }
 
 static void test_outer_cone_exponential_decay() {
   // theta_0 = 30 deg, smoothness = 0.5 -> theta_1 = 15 deg
-  float speed = 10.0f;
-  spotlight spot(point3(0, 0, 0), vec3(0, 0, 1), 30.0f, 0.5f, speed);
+  spotlight spot(point3(0, 0, 0), vec3(0, 0, 1), 30.0f, 0.5f);
 
   // Sample at 22.5 degrees (between theta_1=15 and theta_0=30)
   float angle = 22.5f;
   point3 p = make_sample_point(point3(0, 0, 0), angle, 5.0f);
   float f = spot.calculate_light_interaction(p);
 
-  float t = std::pow(std::cos(degrees_to_radians(angle)), speed);
-  float expected = t * t;
+  float cos_angle = std::cos(degrees_to_radians(angle));
+  float cos_0 = std::cos(degrees_to_radians(30.0f));
+  float cos_1 = std::cos(degrees_to_radians(15.0f));
+  float expected = (cos_angle - cos_0) / (cos_1 - cos_0);
   expect_near(f, expected);
-  expect_true(f < t, "outer cone attenuation t*t is strictly less than linear t");
+  expect_true(f > 0.0f && f < 1.0f, "outer cone attenuation is between 0 and 1");
 }
 
 static void test_outer_cone_boundary_cutoff() {
@@ -119,13 +120,12 @@ static void test_outer_cone_boundary_cutoff() {
 
 static void test_sharp_boundary_when_smoothness_one() {
   // smoothness = 1.0 -> theta_1 == theta_0 == 25 deg (hard-edge spotlight)
-  spotlight spot(point3(0, 0, 0), vec3(0, 0, 1), 25.0f, 1.0f, 15.0f);
+  spotlight spot(point3(0, 0, 0), vec3(0, 0, 1), 25.0f, 1.0f);
 
-  // Inside cone at 24.5 deg -> returns t (inner cone)
+  // Inside cone at 24.5 deg -> returns 1.0f
   point3 p_in = make_sample_point(point3(0, 0, 0), 24.5f);
   float f_in = spot.calculate_light_interaction(p_in);
-  float expected_in = std::pow(std::cos(degrees_to_radians(24.5f)), 15.0f);
-  expect_near(f_in, expected_in);
+  expect_near(f_in, 1.0f);
 
   // Outside cone at 25.5 deg -> returns 0.0f
   point3 p_out = make_sample_point(point3(0, 0, 0), 25.5f);
@@ -134,13 +134,16 @@ static void test_sharp_boundary_when_smoothness_one() {
 
 static void test_zero_smoothness_immediate_outer_cone() {
   // smoothness = 0.0 -> theta_1 = 0 deg
-  spotlight spot(point3(0, 0, 0), vec3(0, 0, 1), 30.0f, 0.0f, 10.0f);
+  spotlight spot(point3(0, 0, 0), vec3(0, 0, 1), 30.0f, 0.0f);
 
-  // Off-axis at 5 deg -> outer cone decay applies immediately (t*t)
-  point3 p = make_sample_point(point3(0, 0, 0), 5.0f);
+  // Off-axis at 15 deg -> outer cone decay applies immediately
+  point3 p = make_sample_point(point3(0, 0, 0), 15.0f);
   float f = spot.calculate_light_interaction(p);
-  float t = std::pow(std::cos(degrees_to_radians(5.0f)), 10.0f);
-  expect_near(f, t * t);
+  float cos_angle = std::cos(degrees_to_radians(15.0f));
+  float cos_0 = std::cos(degrees_to_radians(30.0f));
+  float cos_1 = 1.0f;
+  float expected = (cos_angle - cos_0) / (cos_1 - cos_0);
+  expect_near(f, expected);
 }
 
 static void test_distance_invariance() {

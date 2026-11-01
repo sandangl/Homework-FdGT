@@ -74,13 +74,16 @@ private:
 		float cos_theta = dot(l, s);
 		float cos_1 = cos(degrees_to_radians(theta_1));
 		float cos_0 = cos(degrees_to_radians(theta_0));
-		float t = pow(cos_theta, decaying_speed);
 		
-		if (cos_theta > cos_1) { 
-			return t;	//inner cone: linear decay
+		if (cos_theta >= cos_1) { 
+			return 1.0f;
 		}
-		if (cos_theta > cos_0) {
-			return t*t;	//outer cone: exponential decay
+		if (cos_theta > cos_0) { 
+			if (cos_1 > cos_0) {
+				float t = (cos_theta - cos_0) / (cos_1 - cos_0);
+				return t;
+			}
+			return 1.0f;
 		}
 		return 0.0f;
 	}
