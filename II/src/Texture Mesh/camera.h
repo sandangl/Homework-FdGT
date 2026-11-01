@@ -39,6 +39,7 @@ public:
     point3 lookat = point3(0.0f, 0.0f, 0.0f); // Point camera is looking at
     vec3 vup = vec3(0.0f, 1.0f, 0.0f); // Camera-relative "up" direction
     point3 camera_center; // Camera center
+    environment_texture* environment_texture_sky;
 
     camera()
     {
@@ -189,6 +190,31 @@ private:
         if (!world.hit(r, interval(0.001f, infinity), rec))
         {
             vec3 unit_direction = unit_vector(r.direction());
+            
+            if (environment_texture_sky != nullptr)
+            {
+                float theta = std::acos(tinybvh::tinybvh_clamp(unit_direction.y(), -1.0f, 1.0f));
+                float phi = std::atan2(unit_direction.x(), -unit_direction.z());
+
+                if (environment_texture_sky->zoom != 1.0f || environment_texture_sky->pitch_offset != 0.0f || environment_texture_sky->rotation_y != 0.0f)
+                {
+                    vec3 forward = unit_vector(lookat - lookfrom);
+                    float theta_cam = std::acos(tinybvh::tinybvh_clamp(forward.y(), -1.0f, 1.0f));
+                    float phi_cam = std::atan2(forward.x(), -forward.z());
+
+                    float d_theta = theta - theta_cam;
+                    float d_phi = phi - phi_cam;
+                    while (d_phi > pi) d_phi -= 2.0f * pi;
+                    while (d_phi < -pi) d_phi += 2.0f * pi;
+
+                    theta = (pi / 2.0f) + d_theta * environment_texture_sky->zoom + environment_texture_sky->pitch_offset;
+                    phi = phi_cam + d_phi * environment_texture_sky->zoom + environment_texture_sky->rotation_y;
+                }
+
+                float u = 0.5f + phi / (2.0f * pi);
+                float v = 1.0f - theta / pi;
+                return environment_texture_sky->value(u, v, unit_direction);
+            }
             float t = 0.5f * (unit_direction.y() + 1.0f);
             return (1.0f - t) * color(1.0f, 1.0f, 1.0f) + t * color(0.5f, 0.7f, 1.0f);
         }
