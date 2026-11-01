@@ -33,6 +33,7 @@ public:
 
 		inv_ray.o = multiply(inverse_matrix, r.o);
 		inv_ray.d = inverse_matrix * r.d;
+		inv_ray.tau = r.time();
 
 		if (hittable_ptr->hit(inv_ray, ray_t, rec)) {
 			rec.p = multiply(current_matrix, rec.p);
@@ -51,6 +52,7 @@ public:
 
 		inv_ray.o = multiply(inverse_matrix, r.o);
 		inv_ray.d = inverse_matrix * r.d;
+		inv_ray.tau = r.time();
 
 		if (hittable_ptr->hit_shadow(inv_ray, ray_t))
 			return true;

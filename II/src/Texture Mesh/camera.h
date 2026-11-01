@@ -36,7 +36,7 @@ public:
     // Time instants
     float t0 = 0.0f;
     float t1 = 0.0f;
-    float zeta = 0.25f;
+    float csi = 0.25f;
 
     float vfov = 90.0f; // Vertical view angle (field of view)
     point3 lookfrom = point3(0.0f, 0.0f, -1.0f); // Point camera is looking from
@@ -49,7 +49,7 @@ public:
     {
     }
 
-    camera(float _aspect_ratio, int _image_width, float const _t1=0.0f, float const _t0=0.0f, float const _zeta=0.25f)
+    camera(float _aspect_ratio, int _image_width, float const _t1=0.0f, float const _t0=0.0f, float const _csi=0.25f)
     {
         aspect_ratio = _aspect_ratio;
         image_width = _image_width;
@@ -60,7 +60,7 @@ public:
         
         this->t0 = _t0;
         this->t1 = _t1;
-        this->zeta = _zeta;
+        this->csi = _csi;
     }
 
     void initialize()
@@ -68,6 +68,19 @@ public:
         // Calculate the image height, and ensure that it's at least 1.
         image_height = static_cast<int>(image_width / aspect_ratio);
         image_height = (image_height < 1) ? 1 : image_height;
+
+        if (t0 != t1 && csi > 0.0f) {
+            if (csi > 1.0f) {
+                // If csi was passed as number of samples/instants N (e.g. 48)
+                samples_per_pixel = static_cast<int>(std::round(csi));
+                csi = 1.0f / static_cast<float>(samples_per_pixel);
+            } else {
+                // If csi is step size Delta_xi (e.g. 0.25f or 1.0f / 48.0f)
+                samples_per_pixel = std::max(1, static_cast<int>(std::round(1.0f / csi)));
+            }
+        } else if (samples_per_pixel <= 0) {
+            samples_per_pixel = 1;
+        }
 
         camera_center = lookfrom;
 
@@ -118,7 +131,8 @@ public:
 
                 for (int sample = 0; sample < samples_per_pixel; ++sample)
                 {
-                    ray r = get_ray(i, j);
+                    float cur_csi = (samples_per_pixel > 1) ? std::min(1.0f, sample * csi) : 0.0f;
+                    ray r = get_ray(i, j, cur_csi);
                     pixel_color += ray_color(r, world, lights, K);
                 }
 
@@ -142,7 +156,8 @@ public:
 
                 for (int sample = 0; sample < samples_per_pixel; ++sample)
                 {
-                    ray r = get_ray(i, j);
+                    float cur_csi = (samples_per_pixel > 1) ? std::min(1.0f, sample * csi) : 0.0f;
+                    ray r = get_ray(i, j, cur_csi);
                     pixel_color += ray_color(r, world, lights, K);
                 }
 
@@ -170,7 +185,7 @@ private:
 
     vec3 u, v, w; // Camera frame basis vectors
 
-    ray get_ray(int i, int j) const
+    ray get_ray(int i, int j, float cur_csi = 0.0f) const
     {
         // Get a randomly sampled camera ray for the pixel at location i,j.
 
@@ -180,7 +195,7 @@ private:
         point3 ray_origin = camera_center;
         vec3 ray_direction = pixel_sample - ray_origin;
 
-        return ray(ray_origin, ray_direction, t1, t0);
+        return ray(ray_origin, ray_direction, t0, t1, cur_csi);
     }
 
     vec3 pixel_sample_square() const
@@ -244,7 +259,7 @@ private:
         {
             vec3 l = source->get_direction(rec.p);
             float closest_light = source->get_distance(rec.p);
-            ray shadow_ray(rec.p, l);
+            ray shadow_ray(rec.p, l, r.time());
 
             if (world.hit_shadow(shadow_ray, interval(0.01f, closest_light)))
                 pixel_color += ambient_shading(*source, rec) /num_sources;
