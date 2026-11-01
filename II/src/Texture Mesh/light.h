@@ -1,6 +1,6 @@
 #pragma once
 #include <algorithm>
-#include <common.h>
+#include "common.h"
 
 #include "vec3.h"
 #include "color.h"

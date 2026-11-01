@@ -1,7 +1,7 @@
 #pragma once
 #include <algorithm>
-#include <common.h>
-#include <light.h>
+#include "common.h"
+#include "light.h"
 
 #include "light_list.h"
 #include "vec3.h"

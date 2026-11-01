@@ -19,14 +19,14 @@ public:
   light_list() {}
   light_list(light* source) { add(source); }
   light_list(light& source) { add(&source); }
-  light_list(light_list* other)
+  light_list(const light_list* other)
   {
     for (auto source : other->sources)
     {
       add(source);
     };
   }
-  light_list(light_list& other) { 
+  light_list(const light_list& other) { 
     for (auto source : other.sources)
     {
       add(source);
@@ -38,14 +38,14 @@ public:
   void add(light* source) {
     sources.push_back(source);
   }
-  void add(light_list* other) {
+  void add(const light_list* other) {
     for (auto source : other->sources)
     {
       add(source);
     };
   }
   
-  void add(light_list other) {
+  void add(const light_list& other) {
     for (auto source : other.sources)
     {
       add(source);
