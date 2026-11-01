@@ -33,6 +33,10 @@ public:
     int image_width; // Rendered image width in pixel count
     int image_height; // Rendered image height
     int samples_per_pixel; // Count of random samples for each pixel
+    // Time instants
+    float t0 = 0.0f;
+    float t1 = 0.0f;
+    float zeta = 0.25f;
 
     float vfov = 90.0f; // Vertical view angle (field of view)
     point3 lookfrom = point3(0.0f, 0.0f, -1.0f); // Point camera is looking from
@@ -45,7 +49,7 @@ public:
     {
     }
 
-    camera(float _aspect_ratio, int _image_width)
+    camera(float _aspect_ratio, int _image_width, float const _t1=0.0f, float const _t0=0.0f, float const _zeta=0.25f)
     {
         aspect_ratio = _aspect_ratio;
         image_width = _image_width;
@@ -53,6 +57,10 @@ public:
         // Calculate the image height, and ensure that it's at least 1.
         image_height = static_cast<int>(image_width / aspect_ratio);
         image_height = (image_height < 1) ? 1 : image_height;
+        
+        this->t0 = _t0;
+        this->t1 = _t1;
+        this->zeta = _zeta;
     }
 
     void initialize()
@@ -172,7 +180,7 @@ private:
         point3 ray_origin = camera_center;
         vec3 ray_direction = pixel_sample - ray_origin;
 
-        return ray(ray_origin, ray_direction);
+        return ray(ray_origin, ray_direction, t1, t0);
     }
 
     vec3 pixel_sample_square() const
