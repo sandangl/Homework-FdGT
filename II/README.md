@@ -10,6 +10,8 @@ This project implements the following assignments and advanced rendering techniq
 - **Multiple Light Sources & Extended Light / Soft Shadows** (Homework 3 - Medium / High)
 - **Toon Shading / Cel Shading** (Homework 4 - Easy, Extra)
 - **Sky & Environment Texture Mapping with Solar Direction Estimation** (Homework 9 - Easy, Extra)
+- **Primitive Texture Mapping & Wrapping/Repetition** (Homework 8 - Easy / Medium)
+- **Motion Blur & Moving Instances** (Homework 5 - Medium)
 - **Modular Scene Architecture & Spotlight Unit Test Suite** (Engineering / Extra)
 
 ---
@@ -505,7 +507,262 @@ The resulting `directional_light` casts crisp shadows from the Stanford Bunny an
 
 ---
 
-## 5. Architectural Infrastructure & Engineering Achievements
+## 5. Primitive Texture Mapping & Wrapping/Repetition
+
+While mesh texturing relies on per-vertex UV coordinates exported by DCC software and stored in OBJ files, geometric primitives (sphere, cylinder with planar caps, quad, and axis-aligned box) require analytic parameterizations computed directly in their intersection routines (`hit()`).
+
+### a. Object-Space Parameterization Invariance
+
+All primitive texture coordinates $(u, v) \in [0, 1]^2$ are computed in **object space** prior to world transformation. Because affine transformations (translations, rotations, non-uniform scaling) are applied to the ray via `instance::hit()` using the inverse matrix $\mathbf{M}^{-1}$, the surface coordinates remain rigidly attached to the geometry. The texture moves, rotates, and scales with the instance without sliding or distortion.
+
+### b. Sphere (`sphere.h`)
+
+For a sphere centered at the origin, the outward unit normal $\mathbf{n} = \mathbf{p} / R$ is converted to spherical polar coordinates:
+
+$$
+\theta = \arccos(\text{clamp}(n_y, -1, 1)), \quad \phi = \text{atan2}(n_z, n_x)
+$$
+
+The angular domain $\theta \in [0, \pi]$ and $\phi \in [-\pi, \pi]$ maps to normalized texture coordinates:
+
+$$
+u = \frac{\phi + \pi}{2\pi}, \quad v = 1 - \frac{\theta}{\pi}
+$$
+
+```C++
+// sphere.h - hit()
+vec3 outward_normal = (rec.p - center) / radius;
+rec.set_face_normal(r, outward_normal);
+
+float theta = std::acos(clamp(outward_normal.y(), -1.0f, 1.0f));
+float phi = std::atan2(outward_normal.z(), outward_normal.x());
+rec.u = (phi + pi) / (2.0f * pi);
+rec.v = 1.0f - theta / pi;
+```
+
+#### Poles and Seams
+- **Poles**: Singularities occur at the apex and base ($y = \pm R$), where all longitudinal meridians converge to a single point. Here, $\theta = 0$ or $\theta = \pi$, collapsing $u$ to a degenerate line across the top/bottom texel rows.
+- **Seam**: A vertical discontinuity exists along the meridian opposite the primary view ($\phi = \pm\pi$), where $u$ abruptly transitions from $1.0$ to $0.0$. Bilinear samplers must wrap toroidally across this boundary.
+
+### c. Capped Cylinder (`cylinder.h`)
+
+A finite cylinder bounded between $y_{\min}$ and $y_{\max}$ consists of three distinct geometric components: a curved lateral mantle and two planar circular caps.
+
+1. **Curved Lateral Mantle** ($y_{\min} < y < y_{\max}$):
+   The azimuthal angle around the central $Y$-axis determines $u$, while height along the cylinder axis determines $v$:
+   $$
+   u = \frac{1}{2} + \frac{\text{atan2}(x, z)}{2\pi}, \quad v = \frac{y - y_{\min}}{y_{\max} - y_{\min}}
+   $$
+
+2. **Top Cap** ($y = y_{\max}$, $\mathbf{n} = (0, 1, 0)$):
+   Orthographic projection of the planar disc coordinates $(x, z) \in [-r, r]^2$:
+   $$
+   u = \frac{1}{2} + \frac{x}{2r}, \quad v = \frac{1}{2} + \frac{z}{2r}
+   $$
+
+3. **Bottom Cap** ($y = y_{\min}$, $\mathbf{n} = (0, -1, 0)$) & $x$-Axis Inversion:
+   $$
+   u = \frac{1}{2} - \frac{x}{2r}, \quad v = \frac{1}{2} + \frac{z}{2r}
+   $$
+
+#### Mathematical Justification for Bottom Cap Inversion
+The outward normal of the bottom cap points in the $-Y$ direction. When an observer looks at the underside disc from below (facing upward along $+Y$), the positive $X$-axis points to their right. Without negating $x$, the projected horizontal coordinate would mirror the image horizontally compared to viewing from above. Inverting the sign ($0.5 - x / 2r$) ensures alphanumeric patterns (such as diagnostic test grids) read correctly from left to right from both top and bottom vantage points.
+
+### d. Planar Primitives: Quad and Axis-Aligned Box (`geometry.h`)
+
+#### Quadrilateral (`quad`)
+Given a planar quad defined by base corner $\mathbf{Q}$ and spanning vectors $\mathbf{u}_{\text{vec}}, \mathbf{v}_{\text{vec}}$, the plane constant $D = \mathbf{n} \cdot \mathbf{Q}$ and planar projection vector $\mathbf{w} = \mathbf{n} / (\mathbf{n} \cdot \mathbf{n})$ yield bilinear coordinates directly from cross products:
+
+$$
+\alpha = \mathbf{w} \cdot ((\mathbf{p} - \mathbf{Q}) \times \mathbf{v}_{\text{vec}}), \quad \beta = \mathbf{w} \cdot (\mathbf{u}_{\text{vec}} \times (\mathbf{p} - \mathbf{Q}))
+$$
+
+If $\alpha, \beta \in [0, 1]$, the ray hits the quadrilateral with $(u, v) = (\alpha, \beta)$.
+
+#### Axis-Aligned Box (`box`)
+An axis-aligned box between $\mathbf{p}_{\min}$ and $\mathbf{p}_{\max}$ classifies the intersected face using the dominant component of the hit normal $\mathbf{n}$:
+
+- **Vertical Faces** ($\pm X, \pm Z$):
+  To preserve uniform vertical alignment and prevent inverted textures, all vertical faces project height identically:
+  $$
+  v = \frac{y - y_{\min}}{y_{\max} - y_{\min}}
+  $$
+  The horizontal coordinate $u$ projects the remaining orthogonal axis with appropriate signs to maintain clockwise continuity around the box perimeter.
+- **Top / Bottom Faces** ($\pm Y$):
+  Planar projection of $(x, z)$ across $[\Delta x, \Delta z]$.
+- **Poles & Seams**: Boxes possess no polar singularities. Seams correspond exactly to the 12 geometric edges where the projection plane abruptly changes orientation.
+
+### e. Sampler Upgrade: Repetition Factors and Fractional Wrapping (`texture.h`)
+
+Standard texture samplers often clamp coordinates to $[0, 1]$, causing unsightly smeared borders when coordinates extend beyond the unit square. We upgraded `image_texture` with independent repetition scaling $(s_u, s_v)$ and periodic fractional wrapping:
+
+$$
+u' = (u \cdot s_u) - \lfloor u \cdot s_u \rfloor, \quad v' = (v \cdot s_v) - \lfloor v \cdot s_v \rfloor
+$$
+
+```C++
+// texture.h - image_texture::value()
+u = u * repeat_u;
+v = v * repeat_v;
+
+// Fractional periodic wrap
+u = u - std::floor(u);
+v = v - std::floor(v);
+
+float x = u * float(imageWidth) - 0.5f;
+float y = (1.0f - v) * float(imageHeight) - 0.5f;
+
+int x0 = int(std::floor(x));
+int y0 = int(std::floor(y));
+int x1 = x0 + 1;
+int y1 = y0 + 1;
+
+// Toroidal circular modulo addressing
+x0 = (x0 % imageWidth + imageWidth) % imageWidth;
+x1 = (x1 % imageWidth + imageWidth) % imageWidth;
+y0 = (y0 % imageHeight + imageHeight) % imageHeight;
+y1 = (y1 % imageHeight + imageHeight) % imageHeight;
+```
+
+This enables seamless tiling across ground planes, walls, and curved primitives.
+
+---
+
+## 6. Motion Blur & Moving Instances
+
+A camera shutter remains open across a finite temporal interval $[t_0, t_1]$. Objects moving during this exposure leave a characteristic motion streak (motion blur).
+
+### a. Temporal Ray Parameter ($\tau$)
+
+Every ray carries an instantaneous emission time $\tau \in [t_0, t_1]$:
+
+$$
+\tau = t_0 + \xi (t_1 - t_0), \quad \xi \sim \mathcal{U}(0, 1)
+$$
+
+In multithreaded rendering, primary rays sample $N$ stratified shutter instants across $[t_0, t_1]$:
+
+$$
+\xi_k = \frac{k}{N}, \quad k \in \{0, 1, \dots, N-1\}
+$$
+
+```C++
+// ray.h
+class ray {
+public:
+    point3 o;
+    vec3 d;
+    float tau = 0.0f; // time instant
+    ...
+    float time() const { return tau; }
+};
+```
+
+#### Shadow Ray Temporal Continuity
+When shading an intersection point $\mathbf{p}$ at time $\tau$, the generated shadow ray **must inherit identical time**:
+
+```C++
+// camera.h - ray_color()
+ray shadow_ray(rec.p, l, r.time());
+```
+
+If the shadow ray loses $\tau$ (defaulting to static $\tau = 0$), cast shadows remain frozen in place while the visible object moves, causing detached and physically inconsistent shadow silhouettes.
+
+### b. Moving Instances vs. Mesh Geometry Rebuild
+
+For analytic spheres, motion can be evaluated by interpolating the center $\mathbf{C}(\tau) = (1-s)\mathbf{C}_0 + s\mathbf{C}_1$. However, this does not generalize to complex geometry:
+
+- A triangle mesh with 100,000 vertices cannot recompute vertex positions and rebuild its BVH acceleration structure for every ray without destroying performance.
+- In our engine, **TinyBVH builds once in object space at load time**.
+- The underlying primitive geometry remains **completely static**.
+- All temporal dynamics are encapsulated by a time-varying affine transformation instance (`moving_instance`).
+
+```
+World Ray (time tau) ──[ M⁻¹(tau) ]──> Object Space (Static BVH / Primitive) ──[ M(tau) ]──> World Hit
+```
+
+### c. The Golden Rule: Interpolate Parameters, Never Matrices
+
+A fundamental rule of computer graphics emphasized in the course specification:
+
+> *For translations interpolate the vector; for rotations interpolate the angle; never interpolate the matrix elements.*
+
+If two transformation matrices $\mathbf{M}_0$ and $\mathbf{M}_1$ are blended linearly as $(1-s)\mathbf{M}_0 + s\mathbf{M}_1$:
+1. Orthogonality is lost ($\mathbf{M}(s)^T \mathbf{M}(s) \ne \mathbf{I}$).
+2. For an $80^\circ$ or $180^\circ$ rotation, the intermediate determinant shrinks towards zero ($\det \to 0$), causing severe shearing, warping, and artificial collapse.
+
+Instead, we decompose motion into physical degrees of freedom over normalized shutter progress $s = \text{clamp}((\tau - t_0) / (t_1 - t_0), 0, 1)$:
+
+$$
+\mathbf{T}(s) = (1-s)\mathbf{T}_0 + s\mathbf{T}_1, \quad \theta(s) = (1-s)\theta_0 + s\theta_1
+$$
+
+The instantaneous matrices $\mathbf{M}(\tau)$ and $\mathbf{M}^{-1}(\tau)$ are synthesized dynamically for each ray.
+
+### d. Thread-Safe Implementation (`moving_instance`)
+
+Under multithreaded rendering (`parallel_for`), rays with different timestamps $\tau$ intersect scene objects concurrently. If an instance modifies its internal matrix member variables, threads clobber each other's state, causing severe data races and visual corruption.
+
+To guarantee zero data races without locks, `moving_instance` constructs a lightweight thread-local `instance` on the execution stack:
+
+```C++
+// instance.h
+class moving_instance : public instance {
+public:
+    float t0 = 0.0f, t1 = 0.0f;
+    vec3 trans0, trans1;
+    float rot_y0 = 0.0f, rot_y1 = 0.0f;
+
+    moving_instance(hittable* obj, material* m, float _t0, float _t1,
+                    vec3 _trans0, vec3 _trans1, float _rot_y0 = 0.0f, float _rot_y1 = 0.0f)
+        : instance(obj, m), t0(_t0), t1(_t1),
+          trans0(_trans0), trans1(_trans1),
+          rot_y0(_rot_y0), rot_y1(_rot_y1) {}
+
+    instance get_instance_at(float tau) const {
+        float s = (t1 > t0) ? std::clamp((tau - t0) / (t1 - t0), 0.0f, 1.0f) : 0.0f;
+        vec3 cur_trans = (1.0f - s) * trans0 + s * trans1;
+        float cur_rot_y = (1.0f - s) * rot_y0 + s * rot_y1;
+
+        instance inst(hittable_ptr, mat);
+        inst.identity();
+        inst.translate(cur_trans);
+        inst.rotate_y(cur_rot_y);
+        return inst;
+    }
+
+    bool hit(const ray& r, interval ray_t, hit_record& rec) const override {
+        instance inst = get_instance_at(r.time());
+        return inst.hit(r, ray_t, rec);
+    }
+
+    bool hit_shadow(const ray& r, interval ray_t) const override {
+        instance inst = get_instance_at(r.time());
+        return inst.hit_shadow(r, ray_t);
+    }
+};
+```
+
+### e. Benchmark Scenes (Slide 15 Deliverables)
+
+We implemented the two required diagnostic setups in `scenes.h`:
+
+1. **Bouncing Scene (`create_motion_blur_bouncing_scene`)**:
+   - Terracotta sphere bouncing vertically from $y = 4.0$ to $y = 1.5$.
+   - Blue sphere static on the checkerboard ground plane ($y = 1.5$).
+   - Directional key light casting soft moving shadows.
+   - Deliverables:
+     - `ferma` ($t_0 = t_1 = 0$, $32\text{ spp}$): completely sharp baseline.
+     - `rimbalzo, 48 istanti` ($t_0 = 0, t_1 = 1$, $48\text{ spp}$): smooth vertical blur on the bouncing sphere and shadow, while the adjacent blue sphere remains razor-sharp.
+
+2. **Rotating Scene (`create_motion_blur_rotating_scene`)**:
+   - Spherical globe resting on the checkerboard plane.
+   - Rotates $\theta_0 = 0^\circ \to \theta_1 = 80^\circ$ around its vertical axis during exposure.
+   - Motion blur follows the parallels (lines of latitude), while polar vertices remain stationary, exactly demonstrating axial rotation blur.
+
+---
+
+## 7. Architectural Infrastructure & Engineering Achievements
 
 ### a. RAII Scene Lifecycle Management (`SceneData`)
 
