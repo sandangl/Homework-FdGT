@@ -35,9 +35,15 @@ public:
     }
 
     rec.t = root;
-    rec.p = r.at(rec.t);
+    rec.p = r.at(rec.t);    
     vec3 outward_normal = (rec.p - center) / radius;
     rec.set_face_normal(r, outward_normal);
+    
+    float theta = std::acos(clamp(outward_normal.y(), -1.0f, 1.0f));
+    float phi = std::atan2(outward_normal.z(), outward_normal.x());
+    rec.u = -(phi + pi)/(2.0f*pi);
+    rec.v = 1.0f - theta/pi;
+    
     if (mat) rec.m = mat;
 
     return true;
