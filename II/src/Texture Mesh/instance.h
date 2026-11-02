@@ -183,12 +183,48 @@ public:
 
 		current_matrix = z_rotation_matrix * current_matrix;
 	}
-
-private:
+	
+protected:
 	hittable* hittable_ptr;			// object to be transformed
 	mat4			inverse_matrix;		// inverse transformation matrix
 	mat4			current_matrix; 	// current transformation matrix
 	material* mat;							// material					
+};
+
+class moving_instance : public instance
+{
+public:
+	float t0 = 0.0f, t1 = 0.0f;
+	vec3 trans0, trans1;
+	float rot_y0 = 0.0f, rot_y1 = 0.0f;
+
+	moving_instance(hittable* obj, material* m, float _t0, float _t1,
+	                vec3 _trans0, vec3 _trans1, float _rot_y0 = 0.0f, float _rot_y1 = 0.0f)
+		: instance(obj, m), t0(_t0), t1(_t1),
+		  trans0(_trans0), trans1(_trans1),
+		  rot_y0(_rot_y0), rot_y1(_rot_y1) {}
+
+	instance get_instance_at(float tau) const {
+		float s = (t1 > t0) ? std::clamp((tau - t0) / (t1 - t0), 0.0f, 1.0f) : 0.0f;
+		vec3 cur_trans = (1.0f - s) * trans0 + s * trans1;
+		float cur_rot_y = (1.0f - s) * rot_y0 + s * rot_y1;
+
+		instance inst(hittable_ptr, mat);
+		inst.identity();
+		inst.translate(cur_trans);
+		inst.rotate_y(cur_rot_y);
+		return inst;
+	}
+
+	bool hit(const ray& r, interval ray_t, hit_record& rec) const override {
+		instance inst = get_instance_at(r.time());
+		return inst.hit(r, ray_t, rec);
+	}
+
+	bool hit_shadow(const ray& r, interval ray_t) const override {
+		instance inst = get_instance_at(r.time());
+		return inst.hit_shadow(r, ray_t);
+	}
 };
 
 #endif

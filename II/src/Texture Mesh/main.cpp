@@ -91,7 +91,12 @@ int main(int argc, char* argv[])
 	// SceneData scene = create_toon_scene();
 	// SceneData scene = create_pointlight_and_gradient_scene();
 	// SceneData scene = create_sky_scene();
-	SceneData scene = create_solid_with_textures_scene();
+	// SceneData scene = create_solid_with_textures_scene();
+	// 
+	// SceneData scene = create_motion_blur_bouncing_scene();
+	// SceneData scene = create_motion_blur_bouncing_scene(false);
+	SceneData scene = create_motion_blur_rotating_scene();
+	// SceneData scene = create_motion_blur_rotating_scene(false);
 	camera& cam = scene.cam;
 	cam.initialize();
 	

@@ -726,3 +726,161 @@ inline SceneData create_solid_with_custom_textures_scene() {
 
     return s;
 }
+
+// Scene 5A: Bouncing sphere alongside static sphere on checkerboard floor
+inline SceneData create_motion_blur_bouncing_scene(bool moving = true) {
+    SceneData s;
+
+    s.cam.aspect_ratio = 16.0f / 9.0f;
+    s.cam.image_width = 960;
+    s.cam.vfov = 34.0f;
+    s.cam.lookfrom = point3(0.0f, 4.2f, 14.0f);
+    s.cam.lookat = point3(0.0f, 1.8f, 0.0f);
+    s.cam.environment_texture_sky = nullptr; // Standard blue/white gradient sky
+
+    if (moving) {
+        s.cam.t0 = 0.0f;
+        s.cam.t1 = 1.0f;
+        s.cam.csi = 48.0f;            // 48 shutter instants as in slide
+        s.cam.samples_per_pixel = 48;
+    } else {
+        s.cam.t0 = 0.0f;
+        s.cam.t1 = 0.0f;
+        s.cam.csi = 0.0f;
+        s.cam.samples_per_pixel = 32; // Baseline static render
+    }
+
+    // Checkerboard floor plane at y = 0
+    texture* floor_tex = new image_texture("../models/texturecheckerboard.png", 1.0f, 1.0f);
+    s.textures.push_back(floor_tex);
+
+    material* floor_mat = new material();
+    floor_mat->tex = floor_tex;
+    floor_mat->ka = color(0.15f, 0.15f, 0.15f);
+    floor_mat->kd = color(0.85f, 0.85f, 0.85f);
+    floor_mat->ks = color(0.05f, 0.05f, 0.05f);
+    floor_mat->alpha = 10.0f;
+    s.materials.push_back(floor_mat);
+
+    auto floor_plane = make_shared<plane>(point3(0.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f), floor_mat);
+    s.world.add(floor_plane);
+
+    // Left sphere: terracotta / red, bouncing vertically between y = 4.0 and y = 1.5
+    material* red_mat = new material();
+    red_mat->ka = color(0.18f, 0.10f, 0.08f);
+    red_mat->kd = color(0.85f, 0.35f, 0.22f);
+    red_mat->ks = color(0.25f, 0.25f, 0.25f);
+    red_mat->alpha = 32.0f;
+    s.materials.push_back(red_mat);
+
+    sphere* raw_sphere_left = new sphere(point3(0.0f, 0.0f, 0.0f), 1.5f, red_mat);
+    s.allocated_hittables.push_back(raw_sphere_left);
+
+    vec3 trans0(-2.8f, 4.0f, 0.0f);
+    vec3 trans1 = moving ? vec3(-2.8f, 1.5f, 0.0f) : trans0;
+
+    auto bounce_inst = make_shared<moving_instance>(raw_sphere_left, red_mat, 0.0f, 1.0f, trans0, trans1);
+    s.world.add(bounce_inst);
+
+    // Right sphere: blue, stationary on the floor at y = 1.5
+    material* blue_mat = new material();
+    blue_mat->ka = color(0.08f, 0.12f, 0.18f);
+    blue_mat->kd = color(0.25f, 0.50f, 0.85f);
+    blue_mat->ks = color(0.25f, 0.25f, 0.25f);
+    blue_mat->alpha = 32.0f;
+    s.materials.push_back(blue_mat);
+
+    sphere* raw_sphere_right = new sphere(point3(0.0f, 0.0f, 0.0f), 1.5f, blue_mat);
+    s.allocated_hittables.push_back(raw_sphere_right);
+
+    auto static_inst = make_shared<instance>(raw_sphere_right, blue_mat);
+    static_inst->translate(2.8f, 1.5f, 0.0f);
+    s.world.add(static_inst);
+
+    // Directional light from front-left casting shadow to the right
+    directional_light* key_light = new directional_light(vec3(-0.55f, 1.0f, 0.65f), color(0.12f, 0.12f, 0.12f), color(0.85f, 0.85f, 0.85f), color(0.5f, 0.5f, 0.5f));
+    s.lights.add(key_light);
+    s.allocated_lights.push_back(key_light);
+
+    return s;
+}
+
+// Scene 5B: Textured sphere rotating 80 degrees around its axis during shutter
+inline SceneData create_motion_blur_rotating_scene(bool moving = true) {
+    SceneData s;
+
+    s.cam.aspect_ratio = 16.0f / 9.0f;
+    s.cam.image_width = 960;
+    s.cam.vfov = 32.0f;
+    s.cam.lookfrom = point3(0.0f, 3.6f, 11.5f);
+    s.cam.lookat = point3(0.0f, 2.0f, 0.0f);
+    s.cam.environment_texture_sky = nullptr;
+
+    if (moving) {
+        s.cam.t0 = 0.0f;
+        s.cam.t1 = 1.0f;
+        s.cam.csi = 48.0f;            // 48 shutter instants
+        s.cam.samples_per_pixel = 48;
+    } else {
+        s.cam.t0 = 0.0f;
+        s.cam.t1 = 0.0f;
+        s.cam.csi = 0.0f;
+        s.cam.samples_per_pixel = 32;
+    }
+
+    // Checkerboard floor
+    texture* floor_tex = new image_texture("../models/texturecheckerboard.png", 1.0f, 1.0f);
+    s.textures.push_back(floor_tex);
+
+    material* floor_mat = new material();
+    floor_mat->tex = floor_tex;
+    floor_mat->ka = color(0.15f, 0.15f, 0.15f);
+    floor_mat->kd = color(0.85f, 0.85f, 0.85f);
+    floor_mat->ks = color(0.05f, 0.05f, 0.05f);
+    floor_mat->alpha = 10.0f;
+    s.materials.push_back(floor_mat);
+
+    auto floor_plane = make_shared<plane>(point3(0.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f), floor_mat);
+    s.world.add(floor_plane);
+
+    // Textured sphere in center (using earth texture if available, fallback to equirectangular canyon sky or grid)
+    const char* tex_path = "../models/canyon_sky_small.png";
+    FILE* fe = fopen("../models/earth.png", "r");
+    if (fe) {
+        fclose(fe);
+        tex_path = "../models/earth.png";
+    } else {
+        FILE* fj = fopen("../models/earth.jpg", "r");
+        if (fj) {
+            fclose(fj);
+            tex_path = "../models/earth.jpg";
+        }
+    }
+
+    texture* sphere_tex = new image_texture(tex_path, 1.0f, 1.0f);
+    s.textures.push_back(sphere_tex);
+
+    material* sphere_mat = new material();
+    sphere_mat->tex = sphere_tex;
+    sphere_mat->ka = color(0.18f, 0.18f, 0.18f);
+    sphere_mat->kd = color(0.85f, 0.85f, 0.85f);
+    sphere_mat->ks = color(0.35f, 0.35f, 0.35f);
+    sphere_mat->alpha = 32.0f;
+    s.materials.push_back(sphere_mat);
+
+    sphere* raw_sphere = new sphere(point3(0.0f, 0.0f, 0.0f), 2.0f, sphere_mat);
+    s.allocated_hittables.push_back(raw_sphere);
+
+    vec3 center_pos(0.0f, 2.0f, 0.0f);
+    float rot_y1 = moving ? 80.0f : 0.0f; // 80 deg rotation during exposure
+
+    auto rot_inst = make_shared<moving_instance>(raw_sphere, sphere_mat, 0.0f, 1.0f, center_pos, center_pos, 0.0f, rot_y1);
+    s.world.add(rot_inst);
+
+    // Lighting
+    directional_light* key_light = new directional_light(vec3(-0.55f, 1.0f, 0.65f), color(0.12f, 0.12f, 0.12f), color(0.85f, 0.85f, 0.85f), color(0.5f, 0.5f, 0.5f));
+    s.lights.add(key_light);
+    s.allocated_lights.push_back(key_light);
+
+    return s;
+}
