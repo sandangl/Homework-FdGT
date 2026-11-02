@@ -67,9 +67,15 @@ public:
 
 class image_texture : public texture {
 public:
+	
+	float repeat_u = 1.0f;
+	float repeat_v = 1.0f;
+	
 	image_texture() = default;
 
-	image_texture(const char* filename) {
+	image_texture(const char* filename, float rep_u = 1.0f, float rep_v = 1.0f) {
+		repeat_u = rep_u;
+		repeat_v = rep_v;
 		surface = loadTexture(filename, imageWidth, imageHeight);
 		if (surface == NULL)
 			cerr << "image_texture: impossibile caricare " << filename << endl;
@@ -89,9 +95,13 @@ color image_texture::value(float u, float v, const point3& p) const {
 	if (surface == NULL)
 		return color(1.0f, 0.0f, 1.0f);
 
+	// Repeat factor
+	u = u * repeat_u;
+	v = v * repeat_v;
+	
 	// Bilinear filtering with horizontal wrapping and vertical clamping
 	u = u - std::floor(u);
-	v = std::clamp(v, 0.0f, 1.0f);
+	v = v - std::floor(v);
 
 	float x = u * float(imageWidth) - 0.5f;
 	float y = (1.0f - v) * float(imageHeight) - 0.5f;
@@ -106,8 +116,8 @@ color image_texture::value(float u, float v, const point3& p) const {
 
 	x0 = (x0 % imageWidth + imageWidth) % imageWidth;
 	x1 = (x1 % imageWidth + imageWidth) % imageWidth;
-	y0 = std::clamp(y0, 0, imageHeight - 1);
-	y1 = std::clamp(y1, 0, imageHeight - 1);
+	y0 = (y0 % imageHeight + imageHeight) % imageHeight;
+	y1 = (y1 % imageHeight + imageHeight) % imageHeight;
 
 	Uint8 r, g, b;
 	Uint32 val00 = getpixel(surface, x0, y0);
@@ -197,6 +207,11 @@ public:
 				max_lum = std::max(max_lum, luminance_at(x, y));
 			}
 		}
+
+
+
+
+
 
 		float sum_x = 0.0f, sum_y = 0.0f, total_weight = 0.0f;
 		float min_lum = max_lum * threshold_ratio;
