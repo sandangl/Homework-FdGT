@@ -90,7 +90,8 @@ int main(int argc, char* argv[])
 	// SceneData scene = create_scene_6_original_cat();
 	// SceneData scene = create_toon_scene();
 	// SceneData scene = create_pointlight_and_gradient_scene();
-	SceneData scene = create_sky_scene();
+	// SceneData scene = create_sky_scene();
+	SceneData scene = create_solid_with_textures_scene();
 	camera& cam = scene.cam;
 	cam.initialize();
 	
