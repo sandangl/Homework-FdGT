@@ -49,6 +49,10 @@ add_executable(TextureMesh
         "Texture Mesh/texture.h"
         "Texture Mesh/tiny_obj_loader.h"
         "Texture Mesh/vec3.h"
+        "Texture Mesh/point3_list.h"
+        "Texture Mesh/vec.h"
+        "Texture Mesh/matrix.h"
+        "Texture Mesh/spline.h"
         "Texture Mesh/tinybvh/tiny_bvh.h"
         "Texture Mesh/tinybvh/tiny_bvh_arm_double.h"
         "Texture Mesh/tinybvh/tiny_bvh_arm_float.h"
@@ -154,6 +158,7 @@ endif()
 add_executable(tests
     "tests/main.cpp"
     "tests/spotlight_tests.cpp"
+    "tests/spline_tests.cpp"
 )
 
 if(WINE_BIN)

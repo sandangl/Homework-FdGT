@@ -173,15 +173,19 @@
     <ClInclude Include="mesh_bruteforce.h" />
     <ClInclude Include="object.h" />
     <ClInclude Include="point2.h" />
+    <ClInclude Include="point3_list.h" />
     <ClInclude Include="raster.h" />
     <ClInclude Include="ray.h" />
     <ClInclude Include="scenes.h" />
     <ClInclude Include="shader.h" />
     <ClInclude Include="sphere.h" />
+    <ClInclude Include="spline.h" />
     <ClInclude Include="texture.h" />
     <ClInclude Include="tiny_obj_loader.h" />
     <ClInclude Include="tinybvh\tiny_bvh.h" />
+    <ClInclude Include="vec.h" />
     <ClInclude Include="vec3.h" />
+    <ClInclude Include="matrix.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

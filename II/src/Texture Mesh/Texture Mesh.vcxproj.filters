@@ -77,6 +77,18 @@
     <ClInclude Include="vec3.h">
       <Filter>Header Files\Math</Filter>
     </ClInclude>
+    <ClInclude Include="vec.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="matrix.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="point3_list.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="spline.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
     <ClInclude Include="aabb.h">
       <Filter>Header Files\Math</Filter>
     </ClInclude>
