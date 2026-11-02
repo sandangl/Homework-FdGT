@@ -604,6 +604,7 @@ inline SceneData create_solid_with_textures_scene() {
 
     // 3. Cube / Box (Solid Gold/Amber, rotated so three faces are clearly visible, no texture)
     material* box_mat = new material();
+    box_mat->tex = grid_tex;
     box_mat->ka = color(0.18f, 0.14f, 0.04f);
     box_mat->kd = color(0.90f, 0.65f, 0.15f);
     box_mat->ks = color(0.4f, 0.4f, 0.4f);
