@@ -49,6 +49,68 @@ public:
 	}
 };
 
+class quad : public hittable {
+public:
+	point3 Q;
+	vec3 u_vec;
+	vec3 v_vec;
+	material* mat = nullptr;
+	vec3 normal;
+	float D;
+	vec3 w;
+
+	quad(const point3& _Q, const vec3& _u, const vec3& _v, material* m = nullptr)
+		: Q(_Q), u_vec(_u), v_vec(_v), mat(m) {
+		vec3 n = cross(u_vec, v_vec);
+		normal = unit_vector(n);
+		D = dot(normal, Q);
+		w = n / dot(n, n);
+	}
+
+	bool hit(const ray& r, interval ray_t, hit_record& rec) const override {
+		float denom = dot(normal, r.direction());
+		if (std::fabs(denom) < 1e-6f)
+			return false;
+
+		float t = (D - dot(normal, r.origin())) / denom;
+		if (!ray_t.contains(t))
+			return false;
+
+		point3 intersection = r.at(t);
+		vec3 planar_hitpt_vector = intersection - Q;
+		float alpha = dot(w, cross(planar_hitpt_vector, v_vec));
+		float beta = dot(w, cross(u_vec, planar_hitpt_vector));
+
+		if (alpha < 0.0f || alpha > 1.0f || beta < 0.0f || beta > 1.0f)
+			return false;
+
+		rec.u = alpha;
+		rec.v = beta;
+		rec.t = t;
+		rec.p = intersection;
+		rec.m = mat;
+		rec.set_face_normal(r, normal);
+		return true;
+	}
+
+	bool hit_shadow(const ray& r, interval ray_t) const override {
+		float denom = dot(normal, r.direction());
+		if (std::fabs(denom) < 1e-6f)
+			return false;
+
+		float t = (D - dot(normal, r.origin())) / denom;
+		if (!ray_t.contains(t))
+			return false;
+
+		point3 intersection = r.at(t);
+		vec3 planar_hitpt_vector = intersection - Q;
+		float alpha = dot(w, cross(planar_hitpt_vector, v_vec));
+		float beta = dot(w, cross(u_vec, planar_hitpt_vector));
+
+		return (alpha >= 0.0f && alpha <= 1.0f && beta >= 0.0f && beta <= 1.0f);
+	}
+};
+
 class box : public hittable {
 public:
 	point3 pmin;

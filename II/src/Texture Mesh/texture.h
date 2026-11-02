@@ -48,23 +48,6 @@ public:
 	texture* odd;
 };
 
-class checker_floor_texture : public texture {
-public:
-	color c1;
-	color c2;
-	float scale;
-
-	checker_floor_texture(color _c1 = color(0.82f, 0.82f, 0.82f), color _c2 = color(0.38f, 0.38f, 0.38f), float _scale = 0.5f)
-		: c1(_c1), c2(_c2), scale(_scale) {}
-
-	virtual color value(float u, float v, const point3& p) const {
-		int xi = static_cast<int>(std::floor(scale * p.x()));
-		int zi = static_cast<int>(std::floor(scale * p.z()));
-		int parity = ((xi + zi) % 2 + 2) % 2;
-		return (parity == 0) ? c1 : c2;
-	}
-};
-
 class image_texture : public texture {
 public:
 	

@@ -633,3 +633,96 @@ inline SceneData create_solid_with_textures_scene() {
 
     return s;
 }
+
+inline SceneData create_solid_with_custom_textures_scene() {
+    SceneData s;
+
+    // Camera setup framed on all three primitives side by side
+    s.cam.aspect_ratio = 16.0f / 9.0f;
+    s.cam.image_width = 700;
+    s.cam.samples_per_pixel = 1;
+    s.cam.vfov = 26.0f;
+    s.cam.lookfrom = point3(0.0f, 12.0f, 35.0f);
+    s.cam.lookat = point3(0.0f, -2.0f, -40.0f);
+    s.cam.environment_texture_sky = nullptr;
+
+    // Neutral floor plane at y = -10
+    material* floor_mat = new material();
+    floor_mat->ka = color(0.12f, 0.12f, 0.12f);
+    floor_mat->kd = color(0.45f, 0.45f, 0.48f);
+    floor_mat->ks = color(0.08f, 0.08f, 0.08f);
+    floor_mat->alpha = 10.0f;
+    s.materials.push_back(floor_mat);
+
+    auto floor_plane = make_shared<plane>(point3(0.0f, -10.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f), floor_mat);
+    s.world.add(floor_plane);
+
+    // Custom textures with repetition/wrapping factors:
+    // 1. Sphere with equirectangular landscape texture
+    texture* sphere_tex = new image_texture("../models/canyon_sky_small.png", 1.0f, 1.0f);
+    s.textures.push_back(sphere_tex);
+
+    material* sphere_mat = new material();
+    sphere_mat->tex = sphere_tex;
+    sphere_mat->ka = color(0.2f, 0.2f, 0.2f);
+    sphere_mat->kd = color(0.85f, 0.85f, 0.85f);
+    sphere_mat->ks = color(0.35f, 0.35f, 0.35f);
+    sphere_mat->alpha = 32.0f;
+    s.materials.push_back(sphere_mat);
+
+    auto sphere_obj = make_shared<sphere>(point3(-18.0f, -2.0f, -40.0f), 8.0f, sphere_mat);
+    s.world.add(sphere_obj);
+
+    // 2. Cylinder with cat texture tiled twice horizontally (repeat_u = 2.0)
+    texture* cyl_tex = new image_texture("../models/texturecat.jpg", 2.0f, 1.0f);
+    s.textures.push_back(cyl_tex);
+
+    material* cyl_mat = new material();
+    cyl_mat->tex = cyl_tex;
+    cyl_mat->ka = color(0.2f, 0.2f, 0.2f);
+    cyl_mat->kd = color(0.85f, 0.85f, 0.85f);
+    cyl_mat->ks = color(0.35f, 0.35f, 0.35f);
+    cyl_mat->alpha = 32.0f;
+    s.materials.push_back(cyl_mat);
+
+    cylinder* cyl_raw = new cylinder(-8.0f, 8.0f, 6.0f, cyl_mat);
+    s.allocated_hittables.push_back(cyl_raw);
+
+    auto cyl_inst = make_shared<instance>(cyl_raw, cyl_mat);
+    cyl_inst->translate(0.0f, -2.0f, -40.0f);
+    s.world.add(cyl_inst);
+
+    // 3. Cube / Box with checkerboard texture tiled 2x2 on each face (repeat_u = 2.0, repeat_v = 2.0)
+    texture* box_tex = new image_texture("../models/texturecheckerboard.png", 2.0f, 2.0f);
+    s.textures.push_back(box_tex);
+
+    material* box_mat = new material();
+    box_mat->tex = box_tex;
+    box_mat->ka = color(0.18f, 0.18f, 0.18f);
+    box_mat->kd = color(0.9f, 0.9f, 0.9f);
+    box_mat->ks = color(0.3f, 0.3f, 0.3f);
+    box_mat->alpha = 32.0f;
+    s.materials.push_back(box_mat);
+
+    box* box_raw = new box(point3(-6.0f, -6.0f, -6.0f), point3(6.0f, 6.0f, 6.0f), box_mat);
+    s.allocated_hittables.push_back(box_raw);
+
+    auto box_inst = make_shared<instance>(box_raw, box_mat);
+    box_inst->rotate_y(32.0f);
+    box_inst->translate(18.0f, -4.0f, -40.0f);
+    s.world.add(box_inst);
+
+    // Lighting: directional key light + point fill
+    color lightgray(0.75f, 0.75f, 0.75f);
+    color ambient_light(0.15f, 0.15f, 0.15f);
+
+    directional_light* key_light = new directional_light(vec3(0.5f, 1.0f, 0.5f), ambient_light, lightgray, lightgray);
+    s.lights.add(key_light);
+    s.allocated_lights.push_back(key_light);
+
+    point_light* fill_light = new point_light(point3(-25.0f, 25.0f, 10.0f), color(0.02f, 0.02f, 0.02f), color(0.35f, 0.35f, 0.4f), color(0.1f, 0.1f, 0.1f));
+    s.lights.add(fill_light);
+    s.allocated_lights.push_back(fill_light);
+
+    return s;
+}
