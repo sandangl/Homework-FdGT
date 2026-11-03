@@ -86,7 +86,7 @@ void close()
     SDL_Quit();
 }
 
-SceneData choose_test_scene()
+void choose_test_scene(vector<SceneData>& scenes)
 {
     int choice;
     string typedChoice;
@@ -106,11 +106,13 @@ SceneData choose_test_scene()
     cout << "12: Terra ferma" << endl;
     cout << "13: motion blur: Terra rotante" << endl;
     cout << "14: scena originale (gatto)" << endl << endl;
-    cout << "0. Esci:" << endl << endl;
+    cout << "0. Esci" << endl << endl;
     cout << "> ";
 
-    while (true)
+    bool chosen = false;
+    while (!chosen)
     {
+        chosen = true;
         cin >> typedChoice;
 
         try
@@ -126,83 +128,147 @@ SceneData choose_test_scene()
         {
         case 0:
             cout << "Ciao!";
-            return null_scene();
+            break;
         case 1:
-            return create_scene_1_spotlight_only();
+            scenes.push_back(create_scene_1_spotlight_only());
+            break;
         case 2:
-            return create_scene_2_no_wall_all_lights();
+            scenes.push_back(create_scene_2_no_wall_all_lights());
+            break;
         case 3:
-            return create_scene_3_three_spotlights();
+            scenes.push_back(create_scene_3_three_spotlights());
+            break;
         case 4:
-            return create_scene_4_extended_light_only();
+            scenes.push_back(create_scene_4_extended_light_only());
+            break;
         case 5:
-            return create_scene_5_all_lights();
+            scenes.push_back(create_scene_5_all_lights());
+            break;
         case 6:
-            return create_toon_scene();
+            scenes.push_back(create_toon_scene());
+            break;
         case 7:
-            return create_pointlight_and_gradient_scene();
+            scenes.push_back(create_pointlight_and_gradient_scene());
+            break;
         case 8:
-            return create_sky_scene();
+            scenes.push_back(create_sky_scene());
+            break;
         case 9:
-            return create_solid_with_textures_scene();
+            scenes.push_back(create_solid_with_textures_scene());
+            break;
         case 10:
-            return create_motion_blur_bouncing_scene(false);
+            scenes.push_back(create_motion_blur_bouncing_scene(false));
+            break;
         case 11:
-            return create_motion_blur_bouncing_scene(true);
+            scenes.push_back(create_motion_blur_bouncing_scene(true));
+            break;
         case 12:
-            return create_motion_blur_rotating_scene(false);
+            scenes.push_back(create_motion_blur_rotating_scene(false));
+            break;
         case 13:
-            return create_motion_blur_rotating_scene(true);
+            scenes.push_back(create_motion_blur_rotating_scene(true));
+            break;
         case 14:
-            return create_scene_6_original_cat();
+            scenes.push_back(create_scene_6_original_cat());
+            break;
         default:
             cout << "\nNon valido.";
+            chosen = false;
         }
     }
 }
 
+vector<SceneData> load_short_script()
+{
+    SceneData scene;
+}
+
 int main(int argc, char* argv[])
 {
-    
-    SceneData scene = choose_test_scene(); 
-    
-    if (scene.world.objects.empty())
-    {
-        return 0;
-    }
-    
-    camera& cam = scene.cam;
-    cam.initialize();
+    vector<SceneData> scenes;
 
-    // SDL e SDL_image devono essere inizializzati PRIMA di caricare la texture con IMG_Load
-    if (init(cam.image_width, cam.image_height) == 1)
-    {
-        cout << "App Error! " << std::endl;
-        cleanup_scene(scene);
-        return 1;
-    }
+    choose_test_scene(scenes);
+    //go_through_short_script();
 
-    cout << "Image Resolution: " << cam.image_width << "x" << cam.image_height << "\n255\n";
-
-#if USE_TINYBVH
-    cout << "Ray-mesh intersection: TinyBVH" << endl;
-#else
-    cout << "Ray-mesh intersection: brute force (all triangles)" << endl;
-#endif
-
-    auto start = std::chrono::steady_clock::now();
-
-    cam.parallel_render(scene.world, scene.lights);
-    //cam.render(scene.world, scene.lights);
-
-    auto end = std::chrono::steady_clock::now();
-    double dif = std::chrono::duration<double>(end - start).count();
-    cout << "\n" << "Rendering time: " << dif << " s\n";
-
-    SDL_Event event;
     bool quit = false;
 
-    /* Poll for events: si consumano TUTTI gli eventi in coda, poi si cede la CPU. */
+    if (scenes.size() == 0)
+    {
+        cout << "evviva gesu";
+        quit = true;
+    }
+
+    for (SceneData scene : scenes)
+    {
+        if (quit)
+        {
+            break;
+        }
+        camera& cam = scene.cam;
+        cam.initialize();
+
+        // SDL e SDL_image devono essere inizializzati PRIMA di caricare la texture con IMG_Load
+        if (init(cam.image_width, cam.image_height) == 1)
+        {
+            cout << "App Error! " << std::endl;
+            cleanup_scene(scene);
+            return 1;
+        }
+
+        cout << "Image Resolution: " << cam.image_width << "x" << cam.image_height << "\n255\n";
+
+#if USE_TINYBVH
+        cout << "Ray-mesh intersection: TinyBVH" << endl;
+#else
+        cout << "Ray-mesh intersection: brute force (all triangles)" << endl;
+#endif
+
+        auto start = std::chrono::steady_clock::now();
+
+        if (scene.camera_positions.length() == 0)
+        {
+            scene.camera_positions.points.push_back(cam.lookfrom);
+        }
+        for (point3 camera_pos : scene.camera_positions.points)
+        {
+            if (quit) break;
+            cam.lookfrom = camera_pos;
+            cam.parallel_render(scene.world, scene.lights);
+            //cam.render(scene.world, scene.lights);
+
+            auto end = std::chrono::steady_clock::now();
+            double dif = std::chrono::duration<double>(end - start).count();
+            cout << "\n" << "Rendering time: " << dif << " s" << endl;
+
+            SDL_Event event;
+            SDL_PollEvent(&event);
+
+            switch (event.type)
+            {
+                case SDL_QUIT:
+                    quit = true;
+                    break;
+
+                case SDL_KEYDOWN:
+                    switch (event.key.keysym.sym)
+                    {
+                    case SDLK_ESCAPE:
+                        quit = true;
+                        break;
+
+                    case SDLK_s:
+                        saveScreenshotBMP("screenshot.bmp");
+                        cout << "Screenshot saved!" << endl;
+                        break;
+                    }
+                    break;
+            }
+        }
+    }
+
+    cout << "\n\nFinished rendering all scenes. Press any key to quit...\n" << endl;
+    
+    SDL_Event event;
     while (!quit)
     {
         while (SDL_PollEvent(&event))
@@ -214,17 +280,7 @@ int main(int argc, char* argv[])
                 break;
 
             case SDL_KEYDOWN:
-                switch (event.key.keysym.sym)
-                {
-                case SDLK_ESCAPE:
-                    quit = true;
-                    break;
-
-                case SDLK_s:
-                    saveScreenshotBMP("screenshot.bmp");
-                    cout << "Screenshot saved!" << endl;
-                    break;
-                }
+                quit = true;
                 break;
             }
         }
@@ -232,6 +288,15 @@ int main(int argc, char* argv[])
     }
 
     close();
-    cleanup_scene(scene);
+
+    cout << "\n\nCleaning up objects";
+    for (SceneData scene : scenes)
+    {
+        cout << ".";
+        cleanup_scene(scene);
+    }
+
+    cout << "\nDone.";
+
     return 0;
 }

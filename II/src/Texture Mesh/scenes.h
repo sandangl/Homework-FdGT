@@ -15,6 +15,7 @@
 #include "texture.h"
 #include "sphere.h"
 #include "geometry.h"
+#include "point3_list.h"
 #include "instance.h"
 
 #if USE_TINYBVH
@@ -29,6 +30,7 @@ struct SceneData {
     hittable_list world;
     light_list lights;
     camera cam;
+    point3_list camera_positions;
 
     std::list<mesh*> meshes;
     std::list<texture*> textures;
