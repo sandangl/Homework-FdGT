@@ -178,9 +178,9 @@ void choose_test_scene(vector<SceneData>& scenes)
     }
 }
 
-vector<SceneData> load_short_script()
+void load_short_script(vector<SceneData>& scenes)
 {
-    SceneData scene;
+    
 }
 
 int main(int argc, char* argv[])
@@ -192,11 +192,7 @@ int main(int argc, char* argv[])
 
     bool quit = false;
 
-    if (scenes.size() == 0)
-    {
-        cout << "evviva gesu";
-        quit = true;
-    }
+    if (scenes.size() == 0) quit = true;
 
     for (SceneData scene : scenes)
     {
