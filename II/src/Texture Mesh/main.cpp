@@ -37,11 +37,14 @@ using namespace std;
 
 int init(int width, int height)
 {
-    /* // Initialize SDL2. */
-    if (SDL_Init(SDL_INIT_VIDEO) != 0)
+    /* Initialize SDL2 if needed. */
+    if (SDL_WasInit(SDL_INIT_VIDEO) == 0)
     {
-        cout << "SDL_Init Error: " << SDL_GetError() << std::endl;
-        return 1;
+        if (SDL_Init(SDL_INIT_VIDEO) != 0)
+        {
+            cout << "SDL_Init Error: " << SDL_GetError() << std::endl;
+            return 1;
+        }
     }
 
     /* Initialize SDL_image (JPG and PNG loaders). */
@@ -51,6 +54,12 @@ int init(int width, int height)
         cout << "IMG_Init Error: " << IMG_GetError() << std::endl;
         SDL_Quit();
         return 1;
+    }
+
+    if (window != nullptr)
+    {
+        SDL_SetWindowSize(window, width, height);
+        return 0;
     }
 
     /* Create the window where we will draw. */
@@ -86,7 +95,7 @@ void close()
     SDL_Quit();
 }
 
-void choose_test_scene(vector<SceneData>& scenes)
+void choose_test_scene(vector<SceneFactory>& scenes)
 {
     int choice;
     string typedChoice;
@@ -130,46 +139,46 @@ void choose_test_scene(vector<SceneData>& scenes)
             cout << "Ciao!";
             break;
         case 1:
-            scenes.push_back(create_scene_1_spotlight_only());
+            scenes.push_back([] { return create_scene_1_spotlight_only(); });
             break;
         case 2:
-            scenes.push_back(create_scene_2_no_wall_all_lights());
+            scenes.push_back([] { return create_scene_2_no_wall_all_lights(); });
             break;
         case 3:
-            scenes.push_back(create_scene_3_three_spotlights());
+            scenes.push_back([] { return create_scene_3_three_spotlights(); });
             break;
         case 4:
-            scenes.push_back(create_scene_4_extended_light_only());
+            scenes.push_back([] { return create_scene_4_extended_light_only(); });
             break;
         case 5:
-            scenes.push_back(create_scene_5_all_lights());
+            scenes.push_back([] { return create_scene_5_all_lights(); });
             break;
         case 6:
-            scenes.push_back(create_toon_scene());
+            scenes.push_back([] { return create_toon_scene(); });
             break;
         case 7:
-            scenes.push_back(create_pointlight_and_gradient_scene());
+            scenes.push_back([] { return create_pointlight_and_gradient_scene(); });
             break;
         case 8:
-            scenes.push_back(create_sky_scene());
+            scenes.push_back([] { return create_sky_scene(); });
             break;
         case 9:
-            scenes.push_back(create_solid_with_textures_scene());
+            scenes.push_back([] { return create_solid_with_textures_scene(); });
             break;
         case 10:
-            scenes.push_back(create_motion_blur_bouncing_scene(false));
+            scenes.push_back([] { return create_motion_blur_bouncing_scene(false); });
             break;
         case 11:
-            scenes.push_back(create_motion_blur_bouncing_scene(true));
+            scenes.push_back([] { return create_motion_blur_bouncing_scene(true); });
             break;
         case 12:
-            scenes.push_back(create_motion_blur_rotating_scene(false));
+            scenes.push_back([] { return create_motion_blur_rotating_scene(false); });
             break;
         case 13:
-            scenes.push_back(create_motion_blur_rotating_scene(true));
+            scenes.push_back([] { return create_motion_blur_rotating_scene(true); });
             break;
         case 14:
-            scenes.push_back(create_scene_6_original_cat());
+            scenes.push_back([] { return create_scene_6_original_cat(); });
             break;
         default:
             cout << "\nNon valido.";
@@ -178,32 +187,47 @@ void choose_test_scene(vector<SceneData>& scenes)
     }
 }
 
-void load_short_script(vector<SceneData>& scenes)
+void load_short_script(vector<SceneFactory>& scenes)
 {
     
 }
 
 int main(int argc, char* argv[])
 {
-    vector<SceneData> scenes;
+    // Initialize SDL and SDL_image early so factories can load textures safely
+    if (SDL_Init(SDL_INIT_VIDEO) != 0)
+    {
+        cout << "SDL_Init Error: " << SDL_GetError() << std::endl;
+        return 1;
+    }
+    int img_flags = IMG_INIT_JPG | IMG_INIT_PNG;
+    if ((IMG_Init(img_flags) & img_flags) != img_flags)
+    {
+        cout << "IMG_Init Error: " << IMG_GetError() << std::endl;
+        SDL_Quit();
+        return 1;
+    }
+
+    vector<SceneFactory> scenes;
 
     choose_test_scene(scenes);
-    //go_through_short_script();
+    //load_short_script(scenes);
 
     bool quit = false;
 
     if (scenes.size() == 0) quit = true;
 
-    for (SceneData scene : scenes)
+    for (auto& make_scene : scenes)
     {
         if (quit)
         {
             break;
         }
+
+        SceneData scene = make_scene();
         camera& cam = scene.cam;
         cam.initialize();
 
-        // SDL e SDL_image devono essere inizializzati PRIMA di caricare la texture con IMG_Load
         if (init(cam.image_width, cam.image_height) == 1)
         {
             cout << "App Error! " << std::endl;
@@ -260,6 +284,8 @@ int main(int argc, char* argv[])
                     break;
             }
         }
+
+        cleanup_scene(scene);
     }
 
     cout << "\n\nFinished rendering all scenes. Press any key to quit...\n" << endl;
@@ -284,15 +310,6 @@ int main(int argc, char* argv[])
     }
 
     close();
-
-    cout << "\n\nCleaning up objects";
-    for (SceneData scene : scenes)
-    {
-        cout << ".";
-        cleanup_scene(scene);
-    }
-
-    cout << "\nDone.";
 
     return 0;
 }

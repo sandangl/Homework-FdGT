@@ -3,6 +3,7 @@
 #include <list>
 #include <memory>
 #include <iostream>
+#include <functional>
 
 #include "vec3.h"
 #include "color.h"
@@ -61,3 +62,5 @@ struct SceneData {
 inline void cleanup_scene(SceneData& scene) {
     scene.cleanup();
 }
+
+using SceneFactory = std::function<SceneData()>;
