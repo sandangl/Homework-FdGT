@@ -251,6 +251,13 @@ int main(int argc, char* argv[])
         }
         for (point3 camera_pos : scene.camera_positions.points)
         {
+            if (!scene.transforms.empty())
+            {
+                InstanceTransformations transform = scene.transforms.front();
+                scene.transforms.pop_front();
+                transform.apply_translation();
+                transform.apply_rotation();
+            }
             if (quit) break;
             cam.lookfrom = camera_pos;
             cam.parallel_render(scene.world, scene.lights);
