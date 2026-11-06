@@ -309,8 +309,64 @@ inline SceneData rolling_tumbleweed_scene()
     auto r2_spire_right = add_instance(s, "rock2.obj", vec3(20.0f, 30.0f, 20.0f), vec3(0.0f, -30.0f, 0.0f), vec3(-33.0f, 27.0f, 96.0f), "desertrock2.jpg", 1.5f, 2.0f);
     auto r5_ridge_right = add_instance(s, "rock5.obj", vec3(34.0f, 22.0f, 28.0f), vec3(0.0f, 25.0f, 0.0f), vec3(-68.0f, 10.0f, 125.0f), "desertrock1.jpg", 2.0f, 2.0f);
 
-    // Tumbleweed
-    auto tumbleweed = add_instance(s, "PUSHILIN_Tumbleweed.obj", vec3(1.0f, 1.0f, 1.0f), vec3(0.0f, 0.0f, 0.0f), vec3(16.0f, 1.0f, 14.5f), "PUSHILIN_Tumbleweed.png");
+    // Tumbleweed with motion blur
+    auto tumbleweed = add_moving_instance(
+        s, "PUSHILIN_Tumbleweed.obj",
+        vec3(1.0f, 1.0f, 1.0f),
+        vec3(0.0f, 0.0f, 0.0f),
+        vec3(0.0f, 0.0f, 0.0f), vec3(-0.28f, 0.0f, 0.0f),
+        0.0f, 0.0f,
+        "PUSHILIN_Tumbleweed.png"
+    );
+
+    // Horizontally stretched dust clouds clipping into the ground with solid yellow-reddish toon shading
+    // 1. Big background dust bank (far, wide horizontal stretch, clipping through dunes)
+    auto dust_bg = add_moving_instance(
+        s, "dust_cloud.obj",
+        vec3(16.0f, 2.5f, 5.0f),
+        vec3(0.0f, 0.0f, 0.0f),
+        vec3(0.0f, 0.0f, 0.0f), vec3(-0.12f, 0.0f, 0.0f),
+        0.0f, 0.0f,
+        "dust.png"
+    );
+    dust_bg->getMaterial()->is_toon = true;
+    dust_bg->getMaterial()->epsilon = 0.28f;
+    dust_bg->getMaterial()->K = 3;
+    dust_bg->getMaterial()->ka = color(0.38f, 0.23f, 0.11f);
+    dust_bg->getMaterial()->kd = color(0.86f, 0.52f, 0.24f);
+    dust_bg->getMaterial()->ks = color(0.0f, 0.0f, 0.0f);
+
+    // 2. Midground stretched dust cloud (clipping through ground plane)
+    auto dust_mg = add_moving_instance(
+        s, "dust_cloud.obj",
+        vec3(9.0f, 1.4f, 2.8f),
+        vec3(0.0f, 0.0f, 0.0f),
+        vec3(0.0f, 0.0f, 0.0f), vec3(-0.20f, 0.0f, 0.0f),
+        0.0f, 0.0f,
+        "dust.png"
+    );
+    dust_mg->getMaterial()->is_toon = true;
+    dust_mg->getMaterial()->epsilon = 0.28f;
+    dust_mg->getMaterial()->K = 3;
+    dust_mg->getMaterial()->ka = color(0.38f, 0.22f, 0.10f);
+    dust_mg->getMaterial()->kd = color(0.87f, 0.52f, 0.23f);
+    dust_mg->getMaterial()->ks = color(0.0f, 0.0f, 0.0f);
+
+    // 3. Near ground dust cloud rolling along desert floor behind tumbleweed
+    auto dust_near = add_moving_instance(
+        s, "dust_cloud.obj",
+        vec3(4.5f, 0.85f, 1.8f),
+        vec3(0.0f, 0.0f, 0.0f),
+        vec3(0.0f, 0.0f, 0.0f), vec3(-0.28f, 0.0f, 0.0f),
+        0.0f, 0.0f,
+        "dust.png"
+    );
+    dust_near->getMaterial()->is_toon = true;
+    dust_near->getMaterial()->epsilon = 0.28f;
+    dust_near->getMaterial()->K = 3;
+    dust_near->getMaterial()->ka = color(0.36f, 0.21f, 0.10f);
+    dust_near->getMaterial()->kd = color(0.87f, 0.50f, 0.22f);
+    dust_near->getMaterial()->ks = color(0.0f, 0.0f, 0.0f);
 
     // Catmull-Rom open spline: 6 control points = 5 segments.
     // dt = 1/30 produces 5 * 30 = 150 points (exactly 5s at 30fps).
@@ -325,25 +381,70 @@ inline SceneData rolling_tumbleweed_scene()
     float dt = 1.0f / s.framerate;
     path tumbleweed_path = catmull_rom_interpolate(tumbleweed_cps, dt, false);
 
-    // Roll tumbleweed around Z axis forward (delta X = 32 -> ~1833 deg) plus subtle wobble
+    // Animate tumbleweed and dust clouds with parallax speeds and shutter motion blur
     int total_pts = tumbleweed_path.points.size();
     for (int i = 0; i < total_pts; i++)
     {
-        point3 p = tumbleweed_path.points[i];
         float f = (total_pts > 1) ? (float)i / (float)(total_pts - 1) : 0.0f;
+
+        // 1. Tumbleweed rolling & bouncing with motion blur
+        point3 p = tumbleweed_path.points[i];
         float rot_z = f * 1833.5f;
         float rot_y = 25.0f * sin(f * 4.0f * pi);
         float rot_x = 15.0f * sin(f * 3.0f * pi);
 
-        InstanceTransformations transform;
-        transform.inst = tumbleweed;
-        transform.setTranslation(p.x(), p.y(), p.z());
-        transform.rotationVector = vec3(rot_x, rot_y, rot_z);
-        s.transforms.push_back(transform);
+        InstanceTransformations trans_tw;
+        trans_tw.inst = tumbleweed;
+        trans_tw.setTranslation(p.x(), p.y(), p.z());
+        trans_tw.rotationVector = vec3(rot_x, rot_y, rot_z);
+        trans_tw.has_blur_override = true;
+        trans_tw.blur_trans = vec3(-0.28f, 0.0f, 0.0f);
+        trans_tw.blur_rot = vec3(0.0f, 0.0f, 12.0f);
+
+        // 2. Background dust bank (Z = 55.0f, clips ground, gentle drift)
+        float bg_x = (1.0f - f) * 14.0f + f * (-10.0f);
+        float bg_y = 0.80f + 0.10f * sin(f * 2.0f * pi);
+        InstanceTransformations trans_bg;
+        trans_bg.inst = dust_bg;
+        trans_bg.setTranslation(bg_x, bg_y, 55.0f);
+        trans_bg.rotationVector = vec3(0.0f, 5.0f * sin(f * pi), 0.0f);
+        trans_bg.has_blur_override = true;
+        trans_bg.blur_trans = vec3(-0.12f, 0.0f, 0.0f);
+
+        // 3. Midground stretched dust cloud (Z = 28.0f, clips ground, mid parallax)
+        float mg_x = (1.0f - f) * 18.0f + f * (-14.0f);
+        float mg_y = 0.35f + 0.10f * sin(f * 3.0f * pi);
+        InstanceTransformations trans_mg;
+        trans_mg.inst = dust_mg;
+        trans_mg.setTranslation(mg_x, mg_y, 28.0f);
+        trans_mg.rotationVector = vec3(0.0f, 5.0f + 6.0f * f, 0.0f);
+        trans_mg.has_blur_override = true;
+        trans_mg.blur_trans = vec3(-0.20f, 0.0f, 0.0f);
+
+        // 4. Near dust cloud rolling on ground behind tumbleweed (Z = 16.0f, clips ground)
+        float near_x = (1.0f - f) * 20.0f + f * (-22.0f);
+        float near_y = 0.15f + 0.06f * sin(f * 4.0f * pi);
+        InstanceTransformations trans_near;
+        trans_near.inst = dust_near;
+        trans_near.setTranslation(near_x, near_y, 16.0f);
+        trans_near.rotationVector = vec3(0.0f, 10.0f * f, 0.0f);
+        trans_near.has_blur_override = true;
+        trans_near.blur_trans = vec3(-0.28f, 0.0f, 0.0f);
+
+        std::vector<InstanceTransformations> frame_vec;
+        frame_vec.push_back(trans_tw);
+        frame_vec.push_back(trans_bg);
+        frame_vec.push_back(trans_mg);
+        frame_vec.push_back(trans_near);
+        s.frame_transforms.push_back(frame_vec);
     }
 
     // Pitch camera slightly down (lookat y = 4.0 at z = 15.0) to raise the horizon line to ~57% of viewport
     setup_camera(s, point3(0.0f, 5.0f, 0.0f), point3(0.0f, 4.0f, 15.0f), 50.0f);
+    s.cam.t0 = 0.0f;
+    s.cam.t1 = 0.5f;
+    s.cam.csi = 16.0f;
+    s.cam.samples_per_pixel = 16;
 
     // Center on canyon mountains (rotation_y = 0), zoomed out (zoom = 2.2f) and elevated (pitch_offset = 0.26f)
     environment_texture* sky_tex = new environment_texture("../models/cartoon_canyon_sky_equirectangular_4k.png", 2.2f, 0.0f, 0.26f);
