@@ -207,25 +207,45 @@ protected:
 class moving_instance : public instance
 {
 public:
-	float t0 = 0.0f, t1 = 0.0f;
-	vec3 trans0, trans1;
+	float t0 = 0.0f, t1 = 0.5f;
+	vec3 trans0 = vec3(0.0f, 0.0f, 0.0f);
+	vec3 trans1 = vec3(0.0f, 0.0f, 0.0f);
 	float rot_y0 = 0.0f, rot_y1 = 0.0f;
+	vec3 scale_vec = vec3(1.0f, 1.0f, 1.0f);
+	vec3 base_rot = vec3(0.0f, 0.0f, 0.0f);
 
-	moving_instance(hittable* obj, material* m, float _t0, float _t1,
-	                vec3 _trans0, vec3 _trans1, float _rot_y0 = 0.0f, float _rot_y1 = 0.0f)
+	vec3 frame_trans = vec3(0.0f, 0.0f, 0.0f);
+	float frame_rot_y = 0.0f;
+
+	moving_instance(hittable* obj, material* m, float _t0 = 0.0f, float _t1 = 0.5f,
+	                vec3 _trans0 = vec3(0.0f, 0.0f, 0.0f), vec3 _trans1 = vec3(0.0f, 0.0f, 0.0f),
+	                float _rot_y0 = 0.0f, float _rot_y1 = 0.0f,
+	                vec3 _scale = vec3(1.0f, 1.0f, 1.0f), vec3 _base_rot = vec3(0.0f, 0.0f, 0.0f))
 		: instance(obj, m), t0(_t0), t1(_t1),
 		  trans0(_trans0), trans1(_trans1),
-		  rot_y0(_rot_y0), rot_y1(_rot_y1) {}
+		  rot_y0(_rot_y0), rot_y1(_rot_y1),
+		  scale_vec(_scale), base_rot(_base_rot),
+		  frame_trans(vec3(0.0f, 0.0f, 0.0f)), frame_rot_y(0.0f)
+	{
+		scale(scale_vec);
+		if (base_rot.x() != 0.0f) rotate_x(base_rot.x());
+		if (base_rot.y() != 0.0f) rotate_y(base_rot.y());
+		if (base_rot.z() != 0.0f) rotate_z(base_rot.z());
+		save_base_transform();
+	}
 
 	instance get_instance_at(float tau) const {
 		float s = (t1 > t0) ? std::clamp((tau - t0) / (t1 - t0), 0.0f, 1.0f) : 0.0f;
-		vec3 cur_trans = (1.0f - s) * trans0 + s * trans1;
-		float cur_rot_y = (1.0f - s) * rot_y0 + s * rot_y1;
+		vec3 cur_trans = frame_trans + (1.0f - s) * trans0 + s * trans1;
+		float cur_rot_y = frame_rot_y + (1.0f - s) * rot_y0 + s * rot_y1;
 
 		instance inst(hittable_ptr, mat);
 		inst.identity();
+		inst.scale(scale_vec);
+		if (base_rot.x() != 0.0f) inst.rotate_x(base_rot.x());
+		if (base_rot.y() + cur_rot_y != 0.0f) inst.rotate_y(base_rot.y() + cur_rot_y);
+		if (base_rot.z() != 0.0f) inst.rotate_z(base_rot.z());
 		inst.translate(cur_trans);
-		inst.rotate_y(cur_rot_y);
 		return inst;
 	}
 
