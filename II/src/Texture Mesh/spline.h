@@ -30,15 +30,9 @@ inline path generate_complete_CR_spline(const float dt, const matrix<4,4>& M_CR,
     return pathPoints;
 }
 
-inline path catmull_rom_interpolate(const point3_list& controlSet, const float dt) {
-   // Computes a general catmull-rom set of points given a list of points:
-   // one point per segment, all at the same t (t = 0 is P_i, t = 1 is P_i+1).
-
+// Closed Catmull-Rom spline (loops back from last point to first)
+inline path catmull_rom_interpolate_closed(const point3_list& controlSet, const float dt) {
    if (controlSet.length() == 0) return path{};
-
-   // To create a closed curve, we need to duplicate some points:
-   // The last one in first position, to make camera start at P_0,
-   // and the first two at last position, to make camera finish at the starting point.
 
    int size = controlSet.length();
 
@@ -50,6 +44,25 @@ inline path catmull_rom_interpolate(const point3_list& controlSet, const float d
    matrix<4,4> M_CR = 0.5f * matrix<4, 4>{{{-1, 3, -3, 1}, { 2, -5, 4, -1 }, { -1, 0, 1, 0 }, { 0, 2, 0, 0 }}};
 
    return generate_complete_CR_spline(dt, M_CR, positions);
+}
+
+// Open Catmull-Rom spline (clamps endpoints, does not loop)
+inline path catmull_rom_interpolate_open(const point3_list& controlSet, const float dt) {
+   if (controlSet.length() <= 1) return controlSet;
+
+   // Duplicate first and last points as ghost control points for open endpoints
+   point3_list positions{ controlSet.points.front() };
+   positions.add(controlSet);
+   positions.add(controlSet.points.back());
+
+   matrix<4,4> M_CR = 0.5f * matrix<4, 4>{{{-1, 3, -3, 1}, { 2, -5, 4, -1 }, { -1, 0, 1, 0 }, { 0, 2, 0, 0 }}};
+
+   return generate_complete_CR_spline(dt, M_CR, positions);
+}
+
+inline path catmull_rom_interpolate(const point3_list& controlSet, const float dt, bool closed = true) {
+   return closed ? catmull_rom_interpolate_closed(controlSet, dt)
+                 : catmull_rom_interpolate_open(controlSet, dt);
 }
 
 // Single point evaluation along a segment given 4 control points and local t in [0, 1]
