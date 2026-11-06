@@ -32,6 +32,7 @@
 #include "texture.h"
 #include "ext_light.h"
 #include "test_scenes.h"
+#include "short_scenes.h"
 
 using namespace std;
 
@@ -189,7 +190,7 @@ void choose_test_scene(vector<SceneFactory>& scenes)
 
 void load_short_script(vector<SceneFactory>& scenes)
 {
-    
+    scenes.push_back([]{ return initial_scene(); });
 }
 
 int main(int argc, char* argv[])
@@ -210,8 +211,8 @@ int main(int argc, char* argv[])
 
     vector<SceneFactory> scenes;
 
-    choose_test_scene(scenes);
-    //load_short_script(scenes);
+    // choose_test_scene(scenes);
+    load_short_script(scenes);
 
     bool quit = false;
 

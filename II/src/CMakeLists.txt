@@ -60,6 +60,7 @@ add_executable(TextureMesh
         "Texture Mesh/tinybvh/tiny_bvh_x86_double.h"
         "Texture Mesh/tinybvh/tiny_bvh_x86_float.h"
         "Texture Mesh/test_scenes.h"
+        "Texture Mesh/short_scenes.h"
 )
 
 # Run with Wine when executing on Linux (IDE 'Play' button / CTest)
