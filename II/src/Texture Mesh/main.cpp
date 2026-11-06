@@ -188,9 +188,25 @@ void choose_test_scene(vector<SceneFactory>& scenes)
     }
 }
 
-void load_short_script(vector<SceneFactory>& scenes)
+void load_short_script(vector<SceneFactory>& scenes, bool& record)
 {
+    bool valid = false;
+    cout << "Vuoi avviare la registrazione? (y/n)";
+    while (!valid)
+    {
+        cout << " > ";
+        string ans;
+        cin.ignore();
+        cin >> ans;
+        if (ans == "y" || ans == "n" || ans == "Y" || ans == "N")
+        {
+            record = ans == "y" || ans == "Y";
+            valid = true;
+        } else valid = false;
+    }
+    
     scenes.push_back([]{ return initial_scene(); });
+    scenes.push_back([]{ return closeup_cactus_scene(); });
 }
 
 int main(int argc, char* argv[])
@@ -210,12 +226,12 @@ int main(int argc, char* argv[])
     }
 
     vector<SceneFactory> scenes;
+    bool quit = false;
+    bool record = false;
 
     // choose_test_scene(scenes);
-    load_short_script(scenes);
-
-    bool quit = false;
-
+    load_short_script(scenes, record);
+    
     if (scenes.size() == 0) quit = true;
 
     for (auto& make_scene : scenes)
@@ -246,12 +262,15 @@ int main(int argc, char* argv[])
 
         auto start = std::chrono::steady_clock::now();
 
+        int framecount = 0;
+        
         if (scene.camera_positions.length() == 0)
         {
             scene.camera_positions.points.push_back(cam.lookfrom);
         }
         for (point3 camera_pos : scene.camera_positions.points)
         {
+            framecount++;
             if (!scene.transforms.empty())
             {
                 InstanceTransformations transform = scene.transforms.front();
@@ -261,6 +280,7 @@ int main(int argc, char* argv[])
             }
             if (quit) break;
             cam.lookfrom = camera_pos;
+            cam.initialize();
             cam.parallel_render(scene.world, scene.lights);
             //cam.render(scene.world, scene.lights);
 
@@ -271,6 +291,13 @@ int main(int argc, char* argv[])
             SDL_Event event;
             SDL_PollEvent(&event);
 
+            if (record)
+            {
+                stringstream ss;
+                ss << framecount << ".bmp";
+                saveScreenshotBMP(ss.str());
+            }
+            
             switch (event.type)
             {
                 case SDL_QUIT:
@@ -285,8 +312,11 @@ int main(int argc, char* argv[])
                         break;
 
                     case SDLK_s:
-                        saveScreenshotBMP("screenshot.bmp");
-                        cout << "Screenshot saved!" << endl;
+                        if (!record)
+                        {
+                            saveScreenshotBMP("screenshot.bmp");
+                            cout << "Screenshot saved!" << endl;
+                        }
                         break;
                     }
                     break;
