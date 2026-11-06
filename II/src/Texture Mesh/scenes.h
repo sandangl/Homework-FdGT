@@ -30,40 +30,54 @@ using std::make_shared;
 
 struct InstanceTransformations
 {
-    instance inst;
+    shared_ptr<instance> inst;
     vec3 translationVector;
     vec3 rotationVector;
+    bool applied = false;
+
+    void apply()
+    {
+        if (!inst || applied) return;
+        inst->reset_to_base();
+        if (rotationVector.x() != 0.0f) inst->rotate_x(rotationVector.x());
+        if (rotationVector.y() != 0.0f) inst->rotate_y(rotationVector.y());
+        if (rotationVector.z() != 0.0f) inst->rotate_z(rotationVector.z());
+        inst->translate(translationVector);
+        applied = true;
+    }
 
     void apply_translation()
     {
-        inst.translate(translationVector);
-    }
-
-    void setTranslation(float dx, float dy, float dz)
-    {
-        vec3 translationVector = vec3(dx, dy, dz);
+        apply();
     }
 
     void apply_rotation()
     {
-        inst.rotate_x(rotationVector.x());
-        inst.rotate_y(rotationVector.y());
-        inst.rotate_z(rotationVector.z());
+        apply();
+    }
+
+    void setTranslation(float dx, float dy, float dz)
+    {
+        translationVector = vec3(dx, dy, dz);
+        applied = false;
     }
 
     void setRotation_x(float dx)
     {
-        rotationVector = vec3(dx, 0, 0);
+        rotationVector = vec3(dx, rotationVector.y(), rotationVector.z());
+        applied = false;
     }
 
     void setRotation_y(float dy)
     {
-        rotationVector = vec3(0, dy, 0);
+        rotationVector = vec3(rotationVector.x(), dy, rotationVector.z());
+        applied = false;
     }
 
     void setRotation_z(float dz)
     {
-        rotationVector = vec3(0, 0, dz);
+        rotationVector = vec3(rotationVector.x(), rotationVector.y(), dz);
+        applied = false;
     }
 };
 
@@ -104,7 +118,7 @@ struct SceneData
 
     void wait(float seconds)
     {
-        point3 last_cam_pos = camera_positions.points.at(camera_positions.length() - 1);
+        point3 last_cam_pos = camera_positions.points.empty() ? cam.lookfrom : camera_positions.points.back();
         int total_frames = ceil(framerate * seconds);
         for (int i = 0; i < total_frames; i++)
         {
@@ -114,6 +128,7 @@ struct SceneData
 
     void freeze(float seconds)
     {
+        if (transforms.empty()) return;
         InstanceTransformations last = transforms.back();
         int total_frames = ceil(framerate * seconds);
         for (int i = 0; i < total_frames; i++)

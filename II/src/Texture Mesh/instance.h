@@ -18,6 +18,7 @@ public:
 	instance(hittable* object, material* m) {
 		hittable_ptr = object;
 		mat = m;
+		save_base_transform();
 	}
 
 	void setMaterial(material* m) {
@@ -64,6 +65,16 @@ public:
 	void identity() {
 		set_identity(current_matrix);
 		set_identity(inverse_matrix);
+	}
+
+	void save_base_transform() {
+		base_current_matrix = current_matrix;
+		base_inverse_matrix = inverse_matrix;
+	}
+
+	void reset_to_base() {
+		current_matrix = base_current_matrix;
+		inverse_matrix = base_inverse_matrix;
 	}
 
 	void translate(const vec3& trans) {
@@ -188,6 +199,8 @@ protected:
 	hittable* hittable_ptr;			// object to be transformed
 	mat4			inverse_matrix;		// inverse transformation matrix
 	mat4			current_matrix; 	// current transformation matrix
+	mat4			base_inverse_matrix;	// base inverse matrix before animation
+	mat4			base_current_matrix;	// base matrix before animation
 	material* mat;							// material					
 };
 
