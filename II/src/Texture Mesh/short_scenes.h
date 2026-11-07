@@ -1,5 +1,4 @@
 #include <string>
-#include <fstream>
 #include "scenes.h"
 #include "spline.h"
 #include "point3_list.h"
@@ -8,6 +7,8 @@
 color lightgray(0.75f, 0.75f, 0.75f);
 color ambient_light(0.25f, 0.25f, 0.25f);
 
+const vec3 coyote_scale = vec3(0.0355f, 0.0355f, 0.0355f); // 10% reduction from 0.045f
+
 
 //Helper functions
 
@@ -15,7 +16,7 @@ inline void setup_camera(SceneData& s, point3 lookfrom = point3(0.0f, 0.0f, 0.0f
 {
     s.cam.aspect_ratio = 16.0f / 9.0f;
     s.cam.image_width = 960;
-    s.cam.samples_per_pixel = 1;
+    s.cam.samples_per_pixel = 48;
     s.cam.vfov = fov;
     s.cam.lookfrom = lookfrom;
     s.cam.lookat = lookat;
@@ -320,7 +321,7 @@ inline SceneData rolling_tumbleweed_scene()
         "PUSHILIN_Tumbleweed.png"
     );
 
-    // Horizontally stretched dust clouds clipping into the ground with solid yellow-reddish toon shading
+    // Horizontally stretched dust clouds clipping into the ground with cartoon cloud-puff texture
     // 1. Big background dust bank (far, wide horizontal stretch, clipping through dunes)
     auto dust_bg = add_moving_instance(
         s, "dust_cloud.obj",
@@ -328,13 +329,14 @@ inline SceneData rolling_tumbleweed_scene()
         vec3(0.0f, 0.0f, 0.0f),
         vec3(0.0f, 0.0f, 0.0f), vec3(-0.12f, 0.0f, 0.0f),
         0.0f, 0.0f,
-        "dust.png"
+        "dust.png",
+        3.0f, 1.0f
     );
     dust_bg->getMaterial()->is_toon = true;
     dust_bg->getMaterial()->epsilon = 0.28f;
     dust_bg->getMaterial()->K = 3;
     dust_bg->getMaterial()->ka = color(0.38f, 0.23f, 0.11f);
-    dust_bg->getMaterial()->kd = color(0.86f, 0.52f, 0.24f);
+    dust_bg->getMaterial()->kd = color(0.86f, 0.53f, 0.26f);
     dust_bg->getMaterial()->ks = color(0.0f, 0.0f, 0.0f);
 
     // 2. Midground stretched dust cloud (clipping through ground plane)
@@ -344,13 +346,14 @@ inline SceneData rolling_tumbleweed_scene()
         vec3(0.0f, 0.0f, 0.0f),
         vec3(0.0f, 0.0f, 0.0f), vec3(-0.20f, 0.0f, 0.0f),
         0.0f, 0.0f,
-        "dust.png"
+        "dust.png",
+        2.0f, 1.0f
     );
     dust_mg->getMaterial()->is_toon = true;
     dust_mg->getMaterial()->epsilon = 0.28f;
     dust_mg->getMaterial()->K = 3;
     dust_mg->getMaterial()->ka = color(0.38f, 0.22f, 0.10f);
-    dust_mg->getMaterial()->kd = color(0.87f, 0.52f, 0.23f);
+    dust_mg->getMaterial()->kd = color(0.87f, 0.52f, 0.24f);
     dust_mg->getMaterial()->ks = color(0.0f, 0.0f, 0.0f);
 
     // 3. Near ground dust cloud rolling along desert floor behind tumbleweed
@@ -360,7 +363,8 @@ inline SceneData rolling_tumbleweed_scene()
         vec3(0.0f, 0.0f, 0.0f),
         vec3(0.0f, 0.0f, 0.0f), vec3(-0.28f, 0.0f, 0.0f),
         0.0f, 0.0f,
-        "dust.png"
+        "dust.png",
+        1.5f, 1.0f
     );
     dust_near->getMaterial()->is_toon = true;
     dust_near->getMaterial()->epsilon = 0.28f;
@@ -444,8 +448,8 @@ inline SceneData rolling_tumbleweed_scene()
     setup_camera(s, point3(0.0f, 5.0f, 0.0f), point3(0.0f, 4.0f, 15.0f), 50.0f);
     s.cam.t0 = 0.0f;
     s.cam.t1 = 0.5f;
-    s.cam.csi = 16.0f;
-    s.cam.samples_per_pixel = 16;
+    s.cam.csi = 48.0f;
+    s.cam.samples_per_pixel = 48;
 
     // Center on canyon mountains (rotation_y = 0), zoomed out (zoom = 2.2f) and elevated (pitch_offset = 0.26f)
     environment_texture* sky_tex = new environment_texture("../models/cartoon_canyon_sky_equirectangular_4k.png", 2.2f, 0.0f, 0.26f);
@@ -864,8 +868,8 @@ inline SceneData turtle_scene_coyote()
     vec3 coyote_start_pos(22.0f, 1.45f, 8.0f);
     auto coyote = add_moving_instance(
         s, "wile_e_coyote_rocket.obj",
-        vec3(0.045f, 0.045f, 0.045f), // scale
-        vec3(0.0f, -90.0f, 0.0f),     // rocket pointed along -X
+        coyote_scale,                 // scale
+        vec3(0.0f, -90.0f, 0.0f),      // 90 degrees around y
         vec3(0.0f, 0.0f, 0.0f), vec3(-1.5f, 0.0f, 0.0f), // motion blur streak along -X
         0.0f, 0.0f,
         "wile_e_coyote_rocket.png"
@@ -901,7 +905,7 @@ inline SceneData turtle_scene_coyote()
         InstanceTransformations trans_coyote;
         trans_coyote.inst = coyote;
         trans_coyote.setTranslation(coyote_x, 1.45f, 8.0f);
-        trans_coyote.setRotation_y(0.0f);
+        trans_coyote.rotationVector = vec3(0.0f, 0.0f, 0.0f);
         trans_coyote.has_blur_override = true;
         trans_coyote.blur_trans = vec3(-1.5f, 0.0f, 0.0f);
 
@@ -1006,24 +1010,500 @@ inline SceneData turtle_scene_coyote()
     return s;
 }
 
-inline SceneData running_roadrunner_scene()
-{
-// todo: running scene 1. Parallax effect of cacti moving from right to left, high motion blur, very fast. On the background, scaled up great rocks moving slower (no motion blur). In the foreground, still roadrunner, with great blur effect from left to center. Duration: 3 seconds
-}
-
-inline SceneData freezed_roadrunner_scene()
-{
-// todo: still scene 1. Same scene from before, except everything is still. In the foreground, a duplicated roadrunner: one with motion blur, and one still, in the center. Duration: 2 seconds.
-}
-
 inline SceneData running_coyote_scene()
 {
-// todo: running scene 2. Duplicate running scene one, replace road runner with Wile E. Coyote. Duration: 3 seconds.
-}
+// running scene 2. Duplicate running scene one, replace road runner with Wile E. Coyote. Duration: 3 seconds.
+    SceneData s;
+    
+    setup_camera(s, point3(0.0f, 3.8f, 2.0f), point3(0.0f, 2.0f, 13.5f), 48.0f);
+    s.cam.t0 = 0.0f;
+    s.cam.t1 = 0.5f;
+    s.cam.csi = 48.0f;
+    s.cam.samples_per_pixel = 48; 
+    s.wait(3.0f);
 
-inline SceneData freezed_coyote_scene()
-{
-// todo: still scene 2. Duplicate scene 1, but replace roadrunner with Wile. Duration: 2 seconds.
+    // Sky environment texture
+    environment_texture* sky_tex = new environment_texture("../models/cartoon_canyon_sky_equirectangular_4k.png", 2.2f, 0.0f, 0.26f);
+    s.cam.environment_texture_sky = sky_tex;
+    s.textures.push_back(sky_tex);
+
+    // Directional sunlight + fill light
+    vec3 sun_dir = unit_vector(vec3(0.25f, 0.80f, -0.50f));
+    directional_light* dir_light = new directional_light(sun_dir, color(0.35f, 0.35f, 0.35f), color(0.95f, 0.92f, 0.85f), color(0.15f, 0.15f, 0.15f));
+    s.lights.add(dir_light);
+    s.allocated_lights.push_back(dir_light);
+
+    ambient_light = color(0.40f, 0.38f, 0.35f);
+    point_light* fill_light = new point_light(point3(0.0f, 8.0f, 2.0f), color(0.20f, 0.20f, 0.20f), color(0.45f, 0.42f, 0.38f), color(0.10f, 0.10f, 0.10f));
+    s.lights.add(fill_light);
+    s.allocated_lights.push_back(fill_light);
+    
+    // Ground plane with cartoon desert texture
+    texture* ground_tex = new image_texture("../models/cartoon_desert_ground.png", 6.0f, 6.0f);
+    s.textures.push_back(ground_tex);
+    material* ground_mat = new material();
+    ground_mat->tex = ground_tex;
+    ground_mat->ka = color(0.35f, 0.35f, 0.35f);
+    ground_mat->kd = color(0.85f, 0.85f, 0.85f);
+    ground_mat->ks = color(0.05f, 0.05f, 0.05f);
+    ground_mat->is_toon = false; // Disable toon silhouette on infinite ground plane to avoid horizon blackout
+    ground_mat->epsilon = 0.0f;
+    s.materials.push_back(ground_mat);
+
+    auto ground_plane = make_shared<plane>(point3(0.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f), ground_mat);
+    s.world.add(ground_plane);
+
+    // Distant background canyon formations (Z: 95-125)
+    auto bgr_1 = add_instance(s, "rock4.obj", vec3(36.0f, 22.0f, 28.0f), vec3(0.0f, -25.0f, 0.0f), vec3(48.0f, 11.0f, 110.0f), "desertrock2.jpg", 2.0f, 2.0f);
+    auto bgr_2 = add_instance(s, "rock2.obj", vec3(18.0f, 28.0f, 18.0f), vec3(0.0f, 35.0f, 0.0f), vec3(32.0f, 25.0f, 95.0f), "desertrock3.jpg", 1.5f, 2.0f);
+    auto bgr_3 = add_instance(s, "rock4.obj", vec3(32.0f, 16.0f, 25.0f), vec3(0.0f, 10.0f, 0.0f), vec3(0.0f, 8.0f, 118.0f), "desertrock2.jpg", 2.0f, 2.0f);
+    auto bgr_4 = add_instance(s, "rock4.obj", vec3(38.0f, 24.0f, 30.0f), vec3(0.0f, 30.0f, 0.0f), vec3(-50.0f, 12.0f, 112.0f), "desertrock3.jpg", 2.0f, 2.0f);
+    auto bgr_5 = add_instance(s, "rock2.obj", vec3(20.0f, 30.0f, 20.0f), vec3(0.0f, -30.0f, 0.0f), vec3(-33.0f, 27.0f, 96.0f), "desertrock2.jpg", 1.5f, 2.0f);
+
+    // Midway background elements (closer to rocks / midway: Z: 33-72) drifting with depth-based optical parallax
+    struct MidwayElement {
+        shared_ptr<instance> inst;
+        vec3 base_pos;
+    };
+    std::vector<MidwayElement> midway_elements;
+
+    // 1. Midway rock formations closer to the big rocks (Z: 65-72)
+    auto mid_rock_mesa = add_instance(s, "rock4.obj", vec3(18.0f, 10.0f, 14.0f), vec3(0.0f, 15.0f, 0.0f), vec3(-16.0f, 4.5f, 72.0f), "desertrock1.jpg", 1.8f, 1.8f);
+    midway_elements.push_back({ mid_rock_mesa, vec3(-16.0f, 4.5f, 72.0f) });
+
+    auto mid_rock_spire = add_instance(s, "rock2.obj", vec3(8.0f, 14.0f, 8.0f), vec3(0.0f, -25.0f, 0.0f), vec3(14.0f, 6.5f, 65.0f), "desertrock3.jpg", 1.5f, 1.8f);
+    midway_elements.push_back({ mid_rock_spire, vec3(14.0f, 6.5f, 65.0f) });
+
+    auto mid_rock_ridge_l = add_instance(s, "rock3.obj", vec3(15.0f, 7.5f, 12.0f), vec3(0.0f, 40.0f, 0.0f), vec3(-38.0f, 3.2f, 68.0f), "desertrock2.jpg", 1.5f, 1.5f);
+    midway_elements.push_back({ mid_rock_ridge_l, vec3(-38.0f, 3.2f, 68.0f) });
+
+    auto mid_rock_ridge_r = add_instance(s, "rock4.obj", vec3(16.0f, 8.5f, 13.0f), vec3(0.0f, -30.0f, 0.0f), vec3(36.0f, 3.8f, 70.0f), "desertrock1.jpg", 1.5f, 1.5f);
+    midway_elements.push_back({ mid_rock_ridge_r, vec3(36.0f, 3.8f, 70.0f) });
+
+    // 2. Midground boulder formations and outcroppings (Z: 46-54)
+    auto bgr_mid_1 = add_instance(s, "rock3.obj", vec3(7.0f, 4.5f, 6.0f), vec3(0.0f, 20.0f, 0.0f), vec3(-18.0f, 1.8f, 52.0f), "desertrock1.jpg", 1.5f, 1.5f);
+    midway_elements.push_back({ bgr_mid_1, vec3(-18.0f, 1.8f, 52.0f) });
+
+    auto bgr_mid_2 = add_instance(s, "rock5.obj", vec3(5.5f, 3.8f, 5.0f), vec3(0.0f, -35.0f, 0.0f), vec3(16.0f, 1.5f, 46.0f), "desertrock2.jpg", 1.5f, 1.5f);
+    midway_elements.push_back({ bgr_mid_2, vec3(16.0f, 1.5f, 46.0f) });
+
+    auto mid_rock_center = add_instance(s, "rock5.obj", vec3(6.5f, 3.2f, 5.5f), vec3(0.0f, 10.0f, 0.0f), vec3(-2.0f, 1.2f, 50.0f), "desertrock3.jpg", 1.5f, 1.5f);
+    midway_elements.push_back({ mid_rock_center, vec3(-2.0f, 1.2f, 50.0f) });
+
+    auto mid_rock_flank = add_instance(s, "rock1.obj", vec3(5.0f, 3.0f, 4.5f), vec3(0.0f, -15.0f, 0.0f), vec3(24.0f, 1.1f, 48.0f), "desertrock2.jpg", 1.5f, 1.5f);
+    midway_elements.push_back({ mid_rock_flank, vec3(24.0f, 1.1f, 48.0f) });
+
+    // 3. Midway saguaro cacti and desert floor clusters (Z: 33-64)
+    auto mid_c_far_l = add_cactus(s, vec3(1.6f, 1.6f, 1.6f), vec3(0.0f, 25.0f, 0.0f), vec3(-24.0f, 0.0f, 64.0f));
+    midway_elements.push_back({ mid_c_far_l, vec3(-24.0f, 0.0f, 64.0f) });
+
+    auto mid_c_far_r = add_cactus(s, vec3(1.5f, 1.5f, 1.5f), vec3(0.0f, -20.0f, 0.0f), vec3(22.0f, 0.0f, 62.0f));
+    midway_elements.push_back({ mid_c_far_r, vec3(22.0f, 0.0f, 62.0f) });
+
+    auto mid_c_mid_l = add_cactus(s, vec3(1.35f, 1.35f, 1.35f), vec3(0.0f, 30.0f, 0.0f), vec3(-6.5f, 0.0f, 52.0f));
+    midway_elements.push_back({ mid_c_mid_l, vec3(-6.5f, 0.0f, 52.0f) });
+
+    auto mid_c_mid_r = add_cactus(s, vec3(1.10f, 1.10f, 1.10f), vec3(0.0f, -15.0f, 0.0f), vec3(5.5f, 0.0f, 49.0f));
+    midway_elements.push_back({ mid_c_mid_r, vec3(5.5f, 0.0f, 49.0f) });
+
+    auto mid_c_near_r1 = add_cactus(s, vec3(1.25f, 1.25f, 1.25f), vec3(0.0f, -25.0f, 0.0f), vec3(10.5f, 0.0f, 38.0f));
+    midway_elements.push_back({ mid_c_near_r1, vec3(10.5f, 0.0f, 38.0f) });
+
+    auto mid_c_near_r2 = add_cactus(s, vec3(0.90f, 0.90f, 0.90f), vec3(0.0f, 35.0f, 0.0f), vec3(12.2f, 0.0f, 39.5f));
+    midway_elements.push_back({ mid_c_near_r2, vec3(12.2f, 0.0f, 39.5f) });
+
+    auto mid_c_near_r_rock = add_instance(s, "rock1.obj", vec3(0.7f, 0.35f, 0.6f), vec3(0.0f, 15.0f, 0.0f), vec3(9.5f, 0.15f, 37.5f), "desertrock1.jpg");
+    midway_elements.push_back({ mid_c_near_r_rock, vec3(9.5f, 0.15f, 37.5f) });
+
+    auto mid_c_near_l1 = add_cactus(s, vec3(1.15f, 1.15f, 1.15f), vec3(0.0f, 20.0f, 0.0f), vec3(-11.5f, 0.0f, 34.0f));
+    midway_elements.push_back({ mid_c_near_l1, vec3(-11.5f, 0.0f, 34.0f) });
+
+    auto mid_c_near_l2 = add_cactus(s, vec3(0.85f, 0.85f, 0.85f), vec3(0.0f, -30.0f, 0.0f), vec3(-13.2f, 0.0f, 35.5f));
+    midway_elements.push_back({ mid_c_near_l2, vec3(-13.2f, 0.0f, 35.5f) });
+
+    auto mid_c_near_l_rock = add_instance(s, "rock5.obj", vec3(0.8f, 0.4f, 0.7f), vec3(0.0f, 40.0f, 0.0f), vec3(-10.2f, 0.18f, 33.2f), "desertrock3.jpg");
+    midway_elements.push_back({ mid_c_near_l_rock, vec3(-10.2f, 0.18f, 33.2f) });
+    
+    // Catmull-Rom open spline for background rocks slow drift: dt = 0.5f / s.framerate
+    float rock_dt = 0.5f / s.framerate;
+    point3_list rock_spline_cps;
+    rock_spline_cps.add(point3(0.0f, 0.0f, 0.0f));
+    rock_spline_cps.add(point3(2.5f, 0.0f, 0.0f));
+    rock_spline_cps.add(point3(5.0f, 0.0f, 0.0f));
+    rock_spline_cps.add(point3(8.0f, 0.0f, 0.0f));
+    path rock_path = catmull_rom_interpolate(rock_spline_cps, rock_dt, false);
+
+    // Three staggered groups of cacti moving at moderate speed with low motion blur (moving left to right)
+    // Group 1: 3 cacti + accent rock (Z ~ 18.0f)
+    auto c1_a = add_moving_instance(s, "cactus.obj", vec3(1.35f, 1.35f, 1.35f), vec3(0.0f, 20.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, "cactus.png");
+    c1_a->getMaterial()->is_toon = true;
+    c1_a->getMaterial()->epsilon = 0.32f;
+    c1_a->getMaterial()->K = 3;
+    c1_a->getMaterial()->ka = color(0.25f, 0.25f, 0.25f);
+    c1_a->frame_trans = vec3(-40.0f, 0.0f, 18.0f);
+
+    auto c1_b = add_moving_instance(s, "cactus.obj", vec3(0.95f, 0.95f, 0.95f), vec3(0.0f, -35.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, "cactus.png");
+    c1_b->getMaterial()->is_toon = true;
+    c1_b->getMaterial()->epsilon = 0.32f;
+    c1_b->getMaterial()->K = 3;
+    c1_b->getMaterial()->ka = color(0.25f, 0.25f, 0.25f);
+    c1_b->frame_trans = vec3(-38.8f, 0.0f, 18.6f);
+
+    auto c1_c = add_moving_instance(s, "cactus.obj", vec3(0.70f, 0.70f, 0.70f), vec3(0.0f, 45.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, "cactus.png");
+    c1_c->getMaterial()->is_toon = true;
+    c1_c->getMaterial()->epsilon = 0.32f;
+    c1_c->getMaterial()->K = 3;
+    c1_c->getMaterial()->ka = color(0.25f, 0.25f, 0.25f);
+    c1_c->frame_trans = vec3(-41.0f, 0.0f, 18.3f);
+
+    auto c1_rock = add_moving_instance(s, "rock1.obj", vec3(0.85f, 0.55f, 0.80f), vec3(0.0f, 25.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, "desertrock3.jpg");
+    c1_rock->getMaterial()->is_toon = true;
+    c1_rock->getMaterial()->epsilon = 0.32f;
+    c1_rock->getMaterial()->K = 3;
+    c1_rock->getMaterial()->ka = color(0.25f, 0.25f, 0.25f);
+    c1_rock->frame_trans = vec3(-39.7f, 0.22f, 17.6f);
+
+    // Group 2: Hero cactus + perched Crow from scene 1 + companion cacti (Z ~ 14.5f)
+    auto c2_a = add_moving_instance(s, "cactus.obj", vec3(1.10f, 1.10f, 1.10f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, "cactus.png");
+    c2_a->getMaterial()->is_toon = true;
+    c2_a->getMaterial()->epsilon = 0.32f;
+    c2_a->getMaterial()->K = 3;
+    c2_a->getMaterial()->ka = color(0.25f, 0.25f, 0.25f);
+    c2_a->frame_trans = vec3(-40.0f, 0.0f, 14.5f);
+
+    auto crow = add_moving_instance(s, "crow.obj", vec3(0.0088f, 0.0088f, 0.0088f), vec3(0.0f, -40.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, "crow.png");
+    crow->getMaterial()->is_toon = true;
+    crow->getMaterial()->epsilon = 0.30f;
+    crow->getMaterial()->K = 3;
+    crow->getMaterial()->ka = color(0.25f, 0.25f, 0.25f);
+    crow->frame_trans = vec3(-39.982f, 2.706f, 15.155f);
+
+    auto c2_b = add_moving_instance(s, "cactus.obj", vec3(0.85f, 0.85f, 0.85f), vec3(0.0f, 30.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, "cactus.png");
+    c2_b->getMaterial()->is_toon = true;
+    c2_b->getMaterial()->epsilon = 0.32f;
+    c2_b->getMaterial()->K = 3;
+    c2_b->getMaterial()->ka = color(0.25f, 0.25f, 0.25f);
+    c2_b->frame_trans = vec3(-38.6f, 0.0f, 15.2f);
+
+    auto c2_c = add_moving_instance(s, "cactus.obj", vec3(0.70f, 0.70f, 0.70f), vec3(0.0f, -40.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, "cactus.png");
+    c2_c->getMaterial()->is_toon = true;
+    c2_c->getMaterial()->epsilon = 0.32f;
+    c2_c->getMaterial()->K = 3;
+    c2_c->getMaterial()->ka = color(0.25f, 0.25f, 0.25f);
+    c2_c->frame_trans = vec3(-41.2f, 0.0f, 15.0f);
+
+    // Group 3: 3 cacti (Z ~ 16.2f)
+    auto c3_a = add_moving_instance(s, "cactus.obj", vec3(1.20f, 1.20f, 1.20f), vec3(0.0f, 25.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, "cactus.png");
+    c3_a->getMaterial()->is_toon = true;
+    c3_a->getMaterial()->epsilon = 0.32f;
+    c3_a->getMaterial()->K = 3;
+    c3_a->getMaterial()->ka = color(0.25f, 0.25f, 0.25f);
+    c3_a->frame_trans = vec3(-40.0f, 0.0f, 16.0f);
+
+    auto c3_b = add_moving_instance(s, "cactus.obj", vec3(0.80f, 0.80f, 0.80f), vec3(0.0f, -30.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, "cactus.png");
+    c3_b->getMaterial()->is_toon = true;
+    c3_b->getMaterial()->epsilon = 0.32f;
+    c3_b->getMaterial()->K = 3;
+    c3_b->getMaterial()->ka = color(0.25f, 0.25f, 0.25f);
+    c3_b->frame_trans = vec3(-38.7f, 0.0f, 16.6f);
+
+    auto c3_c = add_moving_instance(s, "cactus.obj", vec3(0.65f, 0.65f, 0.65f), vec3(0.0f, 40.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, "cactus.png");
+    c3_c->getMaterial()->is_toon = true;
+    c3_c->getMaterial()->epsilon = 0.32f;
+    c3_c->getMaterial()->K = 3;
+    c3_c->getMaterial()->ka = color(0.25f, 0.25f, 0.25f);
+    c3_c->frame_trans = vec3(-41.1f, 0.0f, 16.3f);
+
+    // Wile E. Coyote: centered in viewport, tracked by camera at high speed with concentrated motion blur
+    vec3 coyote_center_pos(0.0f, 1.85f, 12.0f);
+    auto coyote = add_moving_instance(
+        s, "wile_e_coyote_rocket.obj",
+        coyote_scale,                 // scale
+        vec3(0.0f, -90.0f, 0.0f),      // 90 degrees around y
+        vec3(-1.0f, 0.0f, 0.0f), vec3(1.0f, 0.0f, 0.0f), // concentrated motion blur centered in viewport
+        0.0f, 0.0f,
+        "wile_e_coyote_rocket.png"
+    );
+    coyote->frame_trans = coyote_center_pos;
+
+    // Motion blurred dust cloud trailing behind Coyote on the left side of the screen (screen left = +X in camera frame)
+    auto dust = add_moving_instance(
+        s, "dust_cloud.obj",
+        vec3(2.6f, 1.25f, 1.8f),      // horizontally stretched trailing scale
+        vec3(0.0f, 0.0f, 0.0f),     // base rotation
+        vec3(0.0f, 0.0f, 0.0f), vec3(2.5f, 0.0f, 0.0f), // backwards motion blur trailing to screen left (+X)
+        0.0f, 0.0f,
+        "dust.png",
+        2.5f, 1.0f
+    );
+    dust->frame_trans = vec3(4.8f, 0.95f, 12.2f);
+    dust->getMaterial()->is_toon = true;
+    dust->getMaterial()->epsilon = 0.28f;
+    dust->getMaterial()->K = 3;
+    dust->getMaterial()->ka = color(0.36f, 0.21f, 0.10f);
+    dust->getMaterial()->kd = color(0.87f, 0.50f, 0.22f);
+    dust->getMaterial()->ks = color(0.0f, 0.0f, 0.0f);
+
+    // Foreground blazing fast cacti group directly obstructing camera view (Z ~ 5.2f)
+    auto fg_c_a = add_moving_instance(s, "cactus.obj", vec3(2.5f, 2.5f, 2.5f), vec3(0.0f, 15.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, "cactus.png");
+    fg_c_a->getMaterial()->is_toon = true;
+    fg_c_a->getMaterial()->epsilon = 0.35f;
+    fg_c_a->getMaterial()->K = 3;
+    fg_c_a->getMaterial()->ka = color(0.20f, 0.20f, 0.20f);
+    fg_c_a->frame_trans = vec3(-35.0f, 0.0f, 5.2f);
+
+    auto fg_c_b = add_moving_instance(s, "cactus.obj", vec3(1.9f, 1.9f, 1.9f), vec3(0.0f, -25.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, "cactus.png");
+    fg_c_b->getMaterial()->is_toon = true;
+    fg_c_b->getMaterial()->epsilon = 0.35f;
+    fg_c_b->getMaterial()->K = 3;
+    fg_c_b->getMaterial()->ka = color(0.20f, 0.20f, 0.20f);
+    fg_c_b->frame_trans = vec3(-33.8f, 0.0f, 5.5f);
+
+    auto fg_c_c = add_moving_instance(s, "cactus.obj", vec3(1.6f, 1.6f, 1.6f), vec3(0.0f, 40.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f, "cactus.png");
+    fg_c_c->getMaterial()->is_toon = true;
+    fg_c_c->getMaterial()->epsilon = 0.35f;
+    fg_c_c->getMaterial()->K = 3;
+    fg_c_c->getMaterial()->ka = color(0.20f, 0.20f, 0.20f);
+    fg_c_c->frame_trans = vec3(-36.2f, 0.0f, 5.0f);
+
+    // Catmull-Rom open spline with coarsest density (dt = 1.0f / 3.0f, only 3 steps per segment)
+    point3_list fg_spline_cps;
+    fg_spline_cps.add(point3(-16.0f, 0.0f, 5.2f));
+    fg_spline_cps.add(point3(-6.0f, 0.0f, 5.2f));
+    fg_spline_cps.add(point3(6.0f, 0.0f, 5.2f));
+    fg_spline_cps.add(point3(16.0f, 0.0f, 5.2f));
+    float fg_dt = 1.0f / 3.0f; // coarsest spline density
+    path fg_path = catmull_rom_interpolate(fg_spline_cps, fg_dt, false);
+
+    // Frame animations for background rocks drift and cacti crossing
+    int total_frames = s.camera_positions.length();
+    for (int i = 0; i < total_frames; i++)
+    {
+        point3 rock_offset = (i < rock_path.points.size()) ? rock_path.points[i] : rock_path.points.back();
+
+        // 1. Five distant background rocks drifting slowly with Catmull-Rom spline (zero motion blur)
+        InstanceTransformations trans_r1;
+        trans_r1.inst = bgr_1;
+        trans_r1.setTranslation(48.0f + rock_offset.x(), 11.0f, 110.0f);
+        trans_r1.has_blur_override = false;
+
+        InstanceTransformations trans_r2;
+        trans_r2.inst = bgr_2;
+        trans_r2.setTranslation(32.0f + rock_offset.x(), 25.0f, 95.0f);
+        trans_r2.has_blur_override = false;
+
+        InstanceTransformations trans_r3;
+        trans_r3.inst = bgr_3;
+        trans_r3.setTranslation(0.0f + rock_offset.x(), 8.0f, 118.0f);
+        trans_r3.has_blur_override = false;
+
+        InstanceTransformations trans_r4;
+        trans_r4.inst = bgr_4;
+        trans_r4.setTranslation(-50.0f + rock_offset.x(), 12.0f, 112.0f);
+        trans_r4.has_blur_override = false;
+
+        InstanceTransformations trans_r5;
+        trans_r5.inst = bgr_5;
+        trans_r5.setTranslation(-33.0f + rock_offset.x(), 27.0f, 96.0f);
+        trans_r5.has_blur_override = false;
+
+        // 2. Midway background elements (closer to rocks / midway: Z: 33-72) drifting with optical parallax (zero motion blur)
+        std::vector<InstanceTransformations> trans_midway;
+        for (const auto& elem : midway_elements) {
+            float p = 98.0f / (elem.base_pos.z() - 2.0f);
+            float drift = rock_offset.x() * p;
+            InstanceTransformations t;
+            t.inst = elem.inst;
+            t.setTranslation(elem.base_pos.x() + drift, elem.base_pos.y(), elem.base_pos.z());
+            t.has_blur_override = false;
+            trans_midway.push_back(t);
+        }
+
+        // 3. Group 1 cacti + accent rock: crossing left to right across frames 0..44 with low motion blur
+        float g1_x = -40.0f;
+        vec3 g1_blur(0.0f, 0.0f, 0.0f);
+        if (i <= 44) {
+            float u = (float)i / 44.0f;
+            g1_x = (1.0f - u) * (-18.0f) + u * 18.0f;
+            g1_blur = vec3(0.50f, 0.0f, 0.0f);
+        } else {
+            g1_x = 40.0f;
+            g1_blur = vec3(0.0f, 0.0f, 0.0f);
+        }
+
+        InstanceTransformations trans_c1_a;
+        trans_c1_a.inst = c1_a;
+        trans_c1_a.setTranslation(g1_x, 0.0f, 18.0f);
+        trans_c1_a.has_blur_override = true;
+        trans_c1_a.blur_trans = g1_blur;
+
+        InstanceTransformations trans_c1_b;
+        trans_c1_b.inst = c1_b;
+        trans_c1_b.setTranslation(g1_x + 1.2f, 0.0f, 18.6f);
+        trans_c1_b.has_blur_override = true;
+        trans_c1_b.blur_trans = g1_blur;
+
+        InstanceTransformations trans_c1_c;
+        trans_c1_c.inst = c1_c;
+        trans_c1_c.setTranslation(g1_x - 1.0f, 0.0f, 18.3f);
+        trans_c1_c.has_blur_override = true;
+        trans_c1_c.blur_trans = g1_blur;
+
+        InstanceTransformations trans_c1_rock;
+        trans_c1_rock.inst = c1_rock;
+        trans_c1_rock.setTranslation(g1_x + 0.3f, 0.22f, 17.6f);
+        trans_c1_rock.has_blur_override = true;
+        trans_c1_rock.blur_trans = g1_blur;
+
+        // 4. Group 2 cacti + Crow: crossing left to right across frames 22..68 with low motion blur
+        float g2_x = -40.0f;
+        vec3 g2_blur(0.0f, 0.0f, 0.0f);
+        if (i < 22) {
+            g2_x = -40.0f;
+            g2_blur = vec3(0.0f, 0.0f, 0.0f);
+        } else if (i <= 68) {
+            float u = (float)(i - 22) / 46.0f;
+            g2_x = (1.0f - u) * (-18.0f) + u * 18.0f;
+            g2_blur = vec3(0.55f, 0.0f, 0.0f);
+        } else {
+            g2_x = 40.0f;
+            g2_blur = vec3(0.0f, 0.0f, 0.0f);
+        }
+
+        InstanceTransformations trans_c2_a;
+        trans_c2_a.inst = c2_a;
+        trans_c2_a.setTranslation(g2_x, 0.0f, 14.5f);
+        trans_c2_a.has_blur_override = true;
+        trans_c2_a.blur_trans = g2_blur;
+
+        InstanceTransformations trans_crow;
+        trans_crow.inst = crow;
+        trans_crow.setTranslation(g2_x + 0.018f, 2.706f, 15.155f);
+        trans_crow.has_blur_override = true;
+        trans_crow.blur_trans = g2_blur;
+
+        InstanceTransformations trans_c2_b;
+        trans_c2_b.inst = c2_b;
+        trans_c2_b.setTranslation(g2_x + 1.4f, 0.0f, 15.2f);
+        trans_c2_b.has_blur_override = true;
+        trans_c2_b.blur_trans = g2_blur;
+
+        InstanceTransformations trans_c2_c;
+        trans_c2_c.inst = c2_c;
+        trans_c2_c.setTranslation(g2_x - 1.2f, 0.0f, 15.0f);
+        trans_c2_c.has_blur_override = true;
+        trans_c2_c.blur_trans = g2_blur;
+
+        // 5. Group 3 cacti: crossing left to right across frames 44..89 with low motion blur
+        float g3_x = -40.0f;
+        vec3 g3_blur(0.0f, 0.0f, 0.0f);
+        if (i < 44) {
+            g3_x = -40.0f;
+            g3_blur = vec3(0.0f, 0.0f, 0.0f);
+        } else {
+            float u = (float)(i - 44) / 45.0f;
+            g3_x = (1.0f - u) * (-18.0f) + u * 18.0f;
+            g3_blur = vec3(0.55f, 0.0f, 0.0f);
+        }
+
+        InstanceTransformations trans_c3_a;
+        trans_c3_a.inst = c3_a;
+        trans_c3_a.setTranslation(g3_x, 0.0f, 16.0f);
+        trans_c3_a.has_blur_override = true;
+        trans_c3_a.blur_trans = g3_blur;
+
+        InstanceTransformations trans_c3_b;
+        trans_c3_b.inst = c3_b;
+        trans_c3_b.setTranslation(g3_x + 1.3f, 0.0f, 16.6f);
+        trans_c3_b.has_blur_override = true;
+        trans_c3_b.blur_trans = g3_blur;
+
+        InstanceTransformations trans_c3_c;
+        trans_c3_c.inst = c3_c;
+        trans_c3_c.setTranslation(g3_x - 1.1f, 0.0f, 16.3f);
+        trans_c3_c.has_blur_override = true;
+        trans_c3_c.blur_trans = g3_blur;
+
+        // 6. Foreground blazing fast cacti directly obstructing camera view (crossing during frames 36..44)
+        float fg_x = -35.0f;
+        vec3 fg_blur(0.0f, 0.0f, 0.0f);
+        if (i < 36) {
+            fg_x = -35.0f;
+            fg_blur = vec3(0.0f, 0.0f, 0.0f);
+        } else if (i <= 44) {
+            int step_idx = i - 36;
+            if (step_idx < (int)fg_path.points.size()) {
+                fg_x = fg_path.points[step_idx].x();
+            } else {
+                fg_x = 18.0f;
+            }
+            fg_blur = vec3(5.5f, 0.0f, 0.0f);
+        } else {
+            fg_x = 35.0f;
+            fg_blur = vec3(0.0f, 0.0f, 0.0f);
+        }
+
+        InstanceTransformations trans_fg_a;
+        trans_fg_a.inst = fg_c_a;
+        trans_fg_a.setTranslation(fg_x, 0.0f, 5.2f);
+        trans_fg_a.has_blur_override = true;
+        trans_fg_a.blur_trans = fg_blur;
+
+        InstanceTransformations trans_fg_b;
+        trans_fg_b.inst = fg_c_b;
+        trans_fg_b.setTranslation(fg_x + 1.2f, 0.0f, 5.5f);
+        trans_fg_b.has_blur_override = true;
+        trans_fg_b.blur_trans = fg_blur;
+
+        InstanceTransformations trans_fg_c;
+        trans_fg_c.inst = fg_c_c;
+        trans_fg_c.setTranslation(fg_x - 1.1f, 0.0f, 5.0f);
+        trans_fg_c.has_blur_override = true;
+        trans_fg_c.blur_trans = fg_blur;
+
+        // 7. Coyote (centered)
+        InstanceTransformations trans_coyote;
+        trans_coyote.inst = coyote;
+        trans_coyote.setTranslation(coyote_center_pos.x(), coyote_center_pos.y(), coyote_center_pos.z());
+        trans_coyote.rotationVector = vec3(0.0f, 0.0f, 0.0f);
+
+        // 8. Dust cloud trailing behind Coyote on the left side (screen left = +X)
+        InstanceTransformations trans_dust;
+        trans_dust.inst = dust;
+        trans_dust.setTranslation(dust->frame_trans.x(), dust->frame_trans.y(), dust->frame_trans.z());
+        trans_dust.has_blur_override = true;
+        trans_dust.blur_trans = vec3(2.5f, 0.0f, 0.0f);
+
+        std::vector<InstanceTransformations> frame_vec;
+        frame_vec.push_back(trans_r1);
+        frame_vec.push_back(trans_r2);
+        frame_vec.push_back(trans_r3);
+        frame_vec.push_back(trans_r4);
+        frame_vec.push_back(trans_r5);
+        for (const auto& t : trans_midway) {
+            frame_vec.push_back(t);
+        }
+        frame_vec.push_back(trans_c1_a);
+        frame_vec.push_back(trans_c1_b);
+        frame_vec.push_back(trans_c1_c);
+        frame_vec.push_back(trans_c1_rock);
+        frame_vec.push_back(trans_c2_a);
+        frame_vec.push_back(trans_crow);
+        frame_vec.push_back(trans_c2_b);
+        frame_vec.push_back(trans_c2_c);
+        frame_vec.push_back(trans_c3_a);
+        frame_vec.push_back(trans_c3_b);
+        frame_vec.push_back(trans_c3_c);
+        frame_vec.push_back(trans_fg_a);
+        frame_vec.push_back(trans_fg_b);
+        frame_vec.push_back(trans_fg_c);
+        frame_vec.push_back(trans_coyote);
+        frame_vec.push_back(trans_dust);
+
+        s.frame_transforms.push_back(frame_vec);
+    }
+    
+    return s;
 }
 
 inline SceneData coyote_time_scene()
@@ -1119,7 +1599,7 @@ inline SceneData coyote_time_scene()
     // Coyote strapped to ACME rocket (running left to right along +X)
     auto coyote = add_moving_instance(
         s, "wile_e_coyote_rocket.obj",
-        vec3(0.045f, 0.045f, 0.045f), // scale
+        coyote_scale,                 // scale
         vec3(0.0f, 90.0f, 0.0f),      // pointed along +X
         vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f),
         0.0f, 0.0f,
@@ -1196,7 +1676,7 @@ inline SceneData coyote_time_scene()
             float speed_y = 36.0f * fall_t;
             float blur_dy = -std::min(10.0f, speed_y * (0.5f / 30.0f) * 2.5f);
             coyote_blur = vec3(0.0f, blur_dy, 0.0f);
-            pitch = -std::min(75.0f, fall_t * 60.0f);
+            pitch = std::min(75.0f, fall_t * 60.0f);
         }
 
         InstanceTransformations trans_coyote;
@@ -1232,7 +1712,7 @@ inline SceneData final_falling_coyote_scene()
     s.cam.vup = vec3(0.0f, 0.0f, -1.0f);
     s.cam.t0 = 0.0f;
     s.cam.t1 = 0.0f;
-    s.cam.samples_per_pixel = 1;
+    s.cam.samples_per_pixel = 48;
     s.cam.csi = 0.0f;
     s.wait(3.5f);
 
@@ -1284,8 +1764,8 @@ inline SceneData final_falling_coyote_scene()
     // rocket exhaust circular nozzle straight up (+Y), directly facing camera.
     auto coyote = add_moving_instance(
         s, "wile_e_coyote_rocket.obj",
-        vec3(0.045f, 0.045f, 0.045f), // scale
-        vec3(90.0f, 0.0f, 0.0f),      // rocket pointed down, exhaust facing camera
+        coyote_scale,                 // scale
+        vec3(90.0f, 180.0f, 0.0f),    // rocket pointed down, exhaust facing camera, 180 deg around z
         vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f),
         0.0f, 0.0f,
         "wile_e_coyote_rocket.png"
@@ -1306,7 +1786,7 @@ inline SceneData final_falling_coyote_scene()
         float y = 22.0f - 60.5f * (u * u);
 
         // Cartoon size scaling: shrinks quadratically as Coyote plunges into distance
-        float scale_val = 0.045f * (1.0f - 0.50f * (u * u));
+        float scale_val = coyote_scale.x() * (1.0f - 0.50f * (u * u));
 
         // Comical subtle wobbling as he plummets down
         float pitch = 90.0f + 2.0f * sin(u * 14.0f * pi);

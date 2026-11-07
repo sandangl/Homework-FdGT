@@ -196,17 +196,23 @@ void load_short_script(vector<SceneFactory>& scenes, bool& record)
     {
         cout << " > ";
         string ans;
-        cin.ignore();
         cin >> ans;
         if (ans == "y" || ans == "n" || ans == "Y" || ans == "N")
         {
             record = ans == "y" || ans == "Y";
             valid = true;
         } else valid = false;
+        cin.ignore();
     }
     
     scenes.push_back([]{ return initial_scene(); });
     scenes.push_back([]{ return closeup_cactus_scene(); });
+    scenes.push_back([]{ return rolling_tumbleweed_scene(); });
+    scenes.push_back([]{ return turtle_scene_roadrunner(); });
+    scenes.push_back([]{ return turtle_scene_coyote(); });
+    scenes.push_back([]{ return running_coyote_scene(); });
+    scenes.push_back([]{ return coyote_time_scene(); });
+    scenes.push_back([]{ return final_falling_coyote_scene(); });
 }
 
 int main(int argc, char* argv[])
@@ -226,6 +232,8 @@ int main(int argc, char* argv[])
     }
 
     vector<SceneFactory> scenes;
+    double total_render_time = 0.0;
+    
     bool quit = false;
     bool record = false;
 
@@ -259,19 +267,32 @@ int main(int argc, char* argv[])
 #else
         cout << "Ray-mesh intersection: brute force (all triangles)" << endl;
 #endif
-
-        auto start = std::chrono::steady_clock::now();
-
+        
         int framecount = 0;
         
         if (scene.camera_positions.length() == 0)
         {
             scene.camera_positions.points.push_back(cam.lookfrom);
         }
+        
+        auto start = std::chrono::steady_clock::now();
+        point3 base_lookat = cam.lookat;
+        point3 base_lookfrom = cam.lookfrom;
+        
         for (point3 camera_pos : scene.camera_positions.points)
         {
             framecount++;
-            if (!scene.transforms.empty())
+            if (!scene.frame_transforms.empty())
+            {
+                auto& cur_frame_transforms = scene.frame_transforms.front();
+                for (auto& transform : cur_frame_transforms)
+                {
+                    transform.apply_translation();
+                    transform.apply_rotation();
+                }
+                scene.frame_transforms.pop_front();
+            }
+            else if (!scene.transforms.empty())
             {
                 InstanceTransformations transform = scene.transforms.front();
                 scene.transforms.pop_front();
@@ -280,13 +301,13 @@ int main(int argc, char* argv[])
             }
             if (quit) break;
             cam.lookfrom = camera_pos;
+            if (scene.move_also_lookat)
+            {
+                cam.lookat = base_lookat + (camera_pos - base_lookfrom);
+            }
             cam.initialize();
             cam.parallel_render(scene.world, scene.lights);
             //cam.render(scene.world, scene.lights);
-
-            auto end = std::chrono::steady_clock::now();
-            double dif = std::chrono::duration<double>(end - start).count();
-            cout << "\n" << "Rendering time: " << dif << " s" << endl;
 
             SDL_Event event;
             SDL_PollEvent(&event);
@@ -324,7 +345,12 @@ int main(int argc, char* argv[])
         }
 
         cleanup_scene(scene);
+        auto end = std::chrono::steady_clock::now();
+        double dif = std::chrono::duration<double>(end - start).count();
+        total_render_time += dif;
     }
+
+    cout << "\n" << "Total rendering time: " << total_render_time << " s" << endl;
 
     cout << "\n\nFinished rendering all scenes. Press any key to quit...\n" << endl;
     
