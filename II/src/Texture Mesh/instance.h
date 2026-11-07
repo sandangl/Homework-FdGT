@@ -216,6 +216,9 @@ public:
 
 	vec3 frame_trans = vec3(0.0f, 0.0f, 0.0f);
 	float frame_rot_y = 0.0f;
+	vec3 frame_rot = vec3(0.0f, 0.0f, 0.0f);
+	vec3 rot_blur0 = vec3(0.0f, 0.0f, 0.0f);
+	vec3 rot_blur1 = vec3(0.0f, 0.0f, 0.0f);
 
 	moving_instance(hittable* obj, material* m, float _t0 = 0.0f, float _t1 = 0.5f,
 	                vec3 _trans0 = vec3(0.0f, 0.0f, 0.0f), vec3 _trans1 = vec3(0.0f, 0.0f, 0.0f),
@@ -225,7 +228,9 @@ public:
 		  trans0(_trans0), trans1(_trans1),
 		  rot_y0(_rot_y0), rot_y1(_rot_y1),
 		  scale_vec(_scale), base_rot(_base_rot),
-		  frame_trans(vec3(0.0f, 0.0f, 0.0f)), frame_rot_y(0.0f)
+		  frame_trans(vec3(0.0f, 0.0f, 0.0f)), frame_rot_y(0.0f),
+		  frame_rot(vec3(0.0f, 0.0f, 0.0f)),
+		  rot_blur0(vec3(0.0f, 0.0f, 0.0f)), rot_blur1(vec3(0.0f, 0.0f, 0.0f))
 	{
 		scale(scale_vec);
 		if (base_rot.x() != 0.0f) rotate_x(base_rot.x());
@@ -237,14 +242,21 @@ public:
 	instance get_instance_at(float tau) const {
 		float s = (t1 > t0) ? std::clamp((tau - t0) / (t1 - t0), 0.0f, 1.0f) : 0.0f;
 		vec3 cur_trans = frame_trans + (1.0f - s) * trans0 + s * trans1;
-		float cur_rot_y = frame_rot_y + (1.0f - s) * rot_y0 + s * rot_y1;
 
 		instance inst(hittable_ptr, mat);
 		inst.identity();
 		inst.scale(scale_vec);
 		if (base_rot.x() != 0.0f) inst.rotate_x(base_rot.x());
-		if (base_rot.y() + cur_rot_y != 0.0f) inst.rotate_y(base_rot.y() + cur_rot_y);
+		if (base_rot.y() != 0.0f) inst.rotate_y(base_rot.y());
 		if (base_rot.z() != 0.0f) inst.rotate_z(base_rot.z());
+
+		vec3 cur_rot = frame_rot + (1.0f - s) * rot_blur0 + s * rot_blur1;
+		cur_rot[1] += frame_rot_y + (1.0f - s) * rot_y0 + s * rot_y1;
+
+		if (cur_rot.x() != 0.0f) inst.rotate_x(cur_rot.x());
+		if (cur_rot.y() != 0.0f) inst.rotate_y(cur_rot.y());
+		if (cur_rot.z() != 0.0f) inst.rotate_z(cur_rot.z());
+
 		inst.translate(cur_trans);
 		return inst;
 	}

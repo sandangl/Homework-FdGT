@@ -33,6 +33,10 @@ struct InstanceTransformations
     shared_ptr<instance> inst;
     vec3 translationVector;
     vec3 rotationVector;
+    vec3 blur_trans = vec3(0.0f, 0.0f, 0.0f);
+    float blur_rot_y = 0.0f;
+    vec3 blur_rot = vec3(0.0f, 0.0f, 0.0f);
+    bool has_blur_override = false;
     bool applied = false;
 
     void apply()
@@ -43,6 +47,24 @@ struct InstanceTransformations
         if (rotationVector.y() != 0.0f) inst->rotate_y(rotationVector.y());
         if (rotationVector.z() != 0.0f) inst->rotate_z(rotationVector.z());
         inst->translate(translationVector);
+        if (auto minst = std::dynamic_pointer_cast<moving_instance>(inst))
+        {
+            minst->frame_trans = translationVector;
+            minst->frame_rot = rotationVector;
+            minst->frame_rot_y = 0.0f;
+            if (has_blur_override)
+            {
+                minst->trans1 = blur_trans;
+                minst->rot_blur1 = blur_rot;
+                if (blur_rot.y() == 0.0f && blur_rot_y != 0.0f)
+                {
+                    minst->rot_blur1[1] = blur_rot_y;
+                }
+                minst->rot_blur0 = vec3(0.0f, 0.0f, 0.0f);
+                minst->rot_y0 = 0.0f;
+                minst->rot_y1 = 0.0f;
+            }
+        }
         applied = true;
     }
 
@@ -88,6 +110,7 @@ struct SceneData
     camera cam;
     point3_list camera_positions;
     deque<InstanceTransformations> transforms;
+    deque<std::vector<InstanceTransformations>> frame_transforms;
     int framerate = 30;
 
     std::list<mesh*> meshes;
