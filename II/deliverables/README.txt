@@ -20,7 +20,7 @@ Cosa ho implementato:
      - 3_tre_luci_colorate.bmp: tre luci puntiformi rossa, verde e blu disposte a triangolo che illuminano un treppiede, generando ombre colorate complementari ciano, magenta e giallo (CMY).
      - 3_tre_spotlights.bmp: tre faretti spot colorati con coni distinti che convergono sulla scena.
    - Ombre morbide con luce estesa:
-     La luce estesa e' implementata come un'area piana quadrilatera campionata stocasticamente con N luci puntiformi per pixel/raggio.
+     La luce estesa e' stata implementata con una tecnica alternativa: ho previso un'area piana quadrilatera campionata stocasticamente con N luci puntiformi per pixel/raggio, invece di campionare direttamente i raggi.
      Misurazione dei tempi di calcolo (risoluzione 700x393, multi-threaded PPL):
      - Luce puntiforme (baseline): 9.775 s -> 3_ombre_morbide_puntiforme.bmp
      - Luce estesa con N = 1 campione: 7.204 s -> 3_ombre_morbide_N1.bmp
@@ -87,6 +87,19 @@ Cosa ho implementato:
      - 5_motion_blur_rimbalzo_mosso.bmp: sfera centrale in rapido moto armonico di rimbalzo verticale durante l'apertura dell'otturatore (48 spp, motion blur evidente con scia e sfocatura d'ombra).
      - 5_motion_blur_rotazione_fermo.bmp: sfera Terra statica (32 spp, posa ferma di riferimento).
      - 5_motion_blur_rotazione_mosso.bmp: sfera Terra in rapida rotazione di 80 gradi attorno al proprio asse polare durante l'apertura dell'otturatore (48 spp, motion blur rotazionale sui continenti).
+
+7. Cortometraggio (Homework 10):
+   - Utilizzo della struttura per gestione di scene multiple (vedasi extra). Il ciclo principale consuma una coda di funzioni fabbricatrici di lambda, che producono struct che definiscono una scena.
+   - Un totale di 11 scene totale nel copione
+   - Ogni scena presenta un cielo; in alcune si segue la previsione della direzione del sole, in altre si procede definendo una posizione personalizzata
+   - La maggior parte delle scene si avvale di una luce di riempimento oltre quella solare, per evitare di ottenere un effetto piatto e scuro
+   - Le texture e i modelli presi in prestito trovano i loro riconoscimenti in LICENSE.txt
+  
+Statistiche di generazione dei fotogrammi a corredo del video, reperibile qui:
+
+
+https://drive.google.com/drive/folders/1Jych7xDYYqV_k2B3mLIN_ZAGH2liG-JR?usp=sharing
+
 
 Extra:
 
