@@ -112,6 +112,7 @@ struct SceneData
     deque<InstanceTransformations> transforms;
     deque<std::vector<InstanceTransformations>> frame_transforms;
     int framerate = 30;
+    bool move_also_lookat = false;
 
     std::list<mesh*> meshes;
     std::list<texture*> textures;

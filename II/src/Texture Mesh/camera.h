@@ -85,15 +85,26 @@ public:
         camera_center = lookfrom;
 
         // Determine viewport dimensions.
-        float focal_length = (lookfrom - lookat).length();
+        vec3 look_dir = lookfrom - lookat;
+        float focal_length = look_dir.length();
+        if (focal_length < 1e-5f)
+        {
+            focal_length = 1.0f;
+            look_dir = vec3(0.0f, 0.0f, 1.0f);
+        }
         float theta = degrees_to_radians(vfov);
         float h = tan(theta / 2.0f);
         float viewport_height = 2.0f * h * focal_length;
         float viewport_width = viewport_height * (static_cast<float>(image_width) / image_height);
 
         // Calculate the u,v,w unit basis vectors for the camera coordinate frame.
-        w = unit_vector(lookfrom - lookat);
-        u = unit_vector(cross(vup, w));
+        w = unit_vector(look_dir);
+        vec3 cross_vup_w = cross(vup, w);
+        if (cross_vup_w.length_squared() < 1e-10f)
+        {
+            cross_vup_w = vec3(1.0f, 0.0f, 0.0f);
+        }
+        u = unit_vector(cross_vup_w);
         v = cross(w, u);
 
         // Calculate the vectors across the horizontal and down the vertical viewport edges.
