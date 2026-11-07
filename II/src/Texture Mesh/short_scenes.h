@@ -464,14 +464,322 @@ inline SceneData rolling_tumbleweed_scene()
 
 inline SceneData turtle_scene_roadrunner()
 {
-// todo: a kind of still life - a cylinder with wooden texture (a wooden pole) on the left. A group of three cacti and some rocks. A turtle is slowly walking, trying to push a pixar textured ball.
-// suddenly, roadrunner passes by (really fast, high motion blur). Duration: 7 seconds.
+    // Still life matching the storyboard:
+    // - group of three cacti
+    // - rocks scattered on the ground (to be stacked into a cairn by roadrunner whirlwind)
+    // - turtle is slowly walking, trying to push a pixar textured ball
+    // - roadrunner passes by at supersonic speed with high translational motion blur
+    // - roadrunner whirlwind sweeps up scattered rocks and stacks them into the cairn tower,
+    //   and sets the turtle spinning around with rotational motion blur
+    // - scene ends the instant roadrunner is out of field (at x = -24.0) to match seamlessly with turtle_scene_coyote
+    // Duration: 3.5 seconds (105 frames at 30 fps)
+    SceneData s;
+
+    // Camera setup with shutter motion blur ([t0, t1] = [0.0, 0.5], fine csi: 24 shutter instants)
+    setup_camera(s, point3(0.0f, 3.8f, 2.0f), point3(0.0f, 2.0f, 13.5f), 48.0f);
+    s.cam.t0 = 0.0f;
+    s.cam.t1 = 0.5f;
+    s.cam.csi = 24.0f;
+    s.cam.samples_per_pixel = 24;
+
+    // Ground plane with cartoon desert texture
+    texture* ground_tex = new image_texture("../models/cartoon_desert_ground.png", 6.0f, 6.0f);
+    s.textures.push_back(ground_tex);
+    material* ground_mat = new material();
+    ground_mat->tex = ground_tex;
+    ground_mat->ka = color(0.35f, 0.35f, 0.35f);
+    ground_mat->kd = color(0.85f, 0.85f, 0.85f);
+    ground_mat->ks = color(0.05f, 0.05f, 0.05f);
+    ground_mat->is_toon = false; // Disable toon silhouette on infinite ground plane to avoid horizon blackout
+    ground_mat->epsilon = 0.0f;
+    s.materials.push_back(ground_mat);
+
+    auto ground_plane = make_shared<plane>(point3(0.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f), ground_mat);
+    s.world.add(ground_plane);
+
+    // Distant background canyon formations (Z: 95-125)
+    add_instance(s, "rock4.obj", vec3(36.0f, 22.0f, 28.0f), vec3(0.0f, -25.0f, 0.0f), vec3(48.0f, 11.0f, 110.0f), "desertrock2.jpg", 2.0f, 2.0f);
+    add_instance(s, "rock2.obj", vec3(18.0f, 28.0f, 18.0f), vec3(0.0f, 35.0f, 0.0f), vec3(32.0f, 25.0f, 95.0f), "desertrock3.jpg", 1.5f, 2.0f);
+    add_instance(s, "rock4.obj", vec3(32.0f, 16.0f, 25.0f), vec3(0.0f, 10.0f, 0.0f), vec3(0.0f, 8.0f, 118.0f), "desertrock2.jpg", 2.0f, 2.0f);
+    add_instance(s, "rock4.obj", vec3(38.0f, 24.0f, 30.0f), vec3(0.0f, 30.0f, 0.0f), vec3(-50.0f, 12.0f, 112.0f), "desertrock3.jpg", 2.0f, 2.0f);
+    add_instance(s, "rock2.obj", vec3(20.0f, 30.0f, 20.0f), vec3(0.0f, -30.0f, 0.0f), vec3(-33.0f, 27.0f, 96.0f), "desertrock2.jpg", 1.5f, 2.0f);
+
+    // 1. Group of three cacti
+    add_instance(s, "cactus.obj", vec3(1.35f, 1.35f, 1.35f), vec3(0.0f, 20.0f, 0.0f), vec3(-4.4f, 0.0f, 14.8f), "cactus.png");
+    add_instance(s, "cactus.obj", vec3(0.95f, 0.95f, 0.95f), vec3(0.0f, -35.0f, 0.0f), vec3(-3.2f, 0.0f, 15.5f), "cactus.png");
+    add_instance(s, "cactus.obj", vec3(0.70f, 0.70f, 0.70f), vec3(0.0f, 45.0f, 0.0f), vec3(-5.2f, 0.0f, 15.0f), "cactus.png");
+
+    // 2. Base rock and accent rocks around cairn site
+    auto rock_base = add_instance(s, "rock3.obj", vec3(1.35f, 0.65f, 1.25f), vec3(0.0f, 10.0f, 0.0f), vec3(3.2f, 0.25f, 13.8f), "desertrock1.jpg");
+    add_instance(s, "rock5.obj", vec3(0.55f, 0.32f, 0.50f), vec3(0.0f, 40.0f, 0.0f), vec3(2.0f, 0.15f, 13.2f), "desertrock2.jpg");
+    add_instance(s, "rock1.obj", vec3(0.45f, 0.25f, 0.42f), vec3(0.0f, -20.0f, 0.0f), vec3(4.2f, 0.12f, 14.2f), "desertrock3.jpg");
+
+    // 3. Rocks to be stacked by the whirlwind (moving_instance)
+    // Initial scattered positions on desert ground
+    vec3 mid_start_pos(4.9f, 0.28f, 14.1f);
+    vec3 mid_start_rot(8.0f, 50.0f, -12.0f);
+    vec3 mid_target_pos(3.15f, 0.92f, 13.8f);
+    vec3 mid_target_rot(0.0f, -25.0f, 0.0f);
+    auto rock_mid = add_moving_instance(
+        s, "rock5.obj",
+        vec3(1.05f, 0.85f, 0.95f),
+        vec3(0.0f, 0.0f, 0.0f),
+        vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f),
+        0.0f, 0.0f,
+        "desertrock2.jpg"
+    );
+    rock_mid->frame_trans = mid_start_pos;
+
+    vec3 top_start_pos(1.7f, 0.22f, 13.5f);
+    vec3 top_start_rot(-15.0f, -60.0f, 25.0f);
+    vec3 top_target_pos(3.10f, 1.62f, 13.8f);
+    vec3 top_target_rot(0.0f, 35.0f, 0.0f);
+    auto rock_top = add_moving_instance(
+        s, "rock1.obj",
+        vec3(0.80f, 0.68f, 0.80f),
+        vec3(0.0f, 0.0f, 0.0f),
+        vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f),
+        0.0f, 0.0f,
+        "desertrock3.jpg"
+    );
+    rock_top->frame_trans = top_start_pos;
+
+    vec3 tip_start_pos(2.5f, 0.18f, 14.7f);
+    vec3 tip_start_rot(20.0f, 85.0f, -5.0f);
+    vec3 tip_target_pos(3.08f, 2.22f, 13.8f);
+    vec3 tip_target_rot(0.0f, -15.0f, 0.0f);
+    auto rock_tip = add_moving_instance(
+        s, "rock2.obj",
+        vec3(0.42f, 0.52f, 0.42f),
+        vec3(0.0f, 0.0f, 0.0f),
+        vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f),
+        0.0f, 0.0f,
+        "desertrock1.jpg"
+    );
+    rock_tip->frame_trans = tip_start_pos;
+
+    // 4. Pixar textured ball
+    material* ball_mat = setup_material(s, "pixar_ball.png");
+    ball_mat->ks = color(0.20f, 0.20f, 0.20f);
+    sphere* raw_ball = new sphere(point3(0.0f, 0.0f, 0.0f), 0.60f, ball_mat);
+    s.allocated_hittables.push_back(raw_ball);
+    auto ball = make_shared<moving_instance>(
+        raw_ball, ball_mat,
+        0.0f, 0.5f,
+        vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f),
+        0.0f, 0.0f,
+        vec3(1.0f, 1.0f, 1.0f), vec3(0.0f, 0.0f, 0.0f)
+    );
+    ball->frame_trans = vec3(1.0f, 0.60f, 12.2f);
+    s.world.add(ball);
+
+    // 5. Turtle slowly walking, trying to push pixar ball, then spinning in whirlwind
+    auto turtle = add_moving_instance(
+        s, "turtle.obj",
+        vec3(1.35f, 1.35f, 1.35f),
+        vec3(0.0f, 0.0f, 0.0f),
+        vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f),
+        0.0f, 0.0f,
+        "turtle.png"
+    );
+    turtle->frame_trans = vec3(-1.2f, 0.35f, 13.0f);
+
+    // 6. Roadrunner passing by at supersonic speed with high translational motion blur
+    vec3 rr_start_pos(24.0f, 1.81f, 8.0f);
+    auto roadrunner = add_moving_instance(
+        s, "roadrunner_running.obj",
+        vec3(0.045f, 0.045f, 0.045f), // scale
+        vec3(0.0f, -90.0f, 0.0f),     // pointed along -X
+        vec3(0.0f, 0.0f, 0.0f), vec3(-2.8f, 0.0f, 0.0f), // supersonic blur along -X
+        0.0f, 0.0f,
+        "roadrunner.png"
+    );
+    roadrunner->frame_trans = rr_start_pos;
+
+    // Sky texture and lighting
+    environment_texture* sky_tex = new environment_texture("../models/cartoon_canyon_sky_equirectangular_4k.png", 2.2f, 0.0f, 0.26f);
+    s.cam.environment_texture_sky = sky_tex;
+    s.textures.push_back(sky_tex);
+
+    vec3 sun_dir = unit_vector(vec3(0.25f, 0.80f, -0.50f));
+    directional_light* dir_light = new directional_light(sun_dir, color(0.35f, 0.35f, 0.35f), color(0.95f, 0.92f, 0.85f), color(0.15f, 0.15f, 0.15f));
+    s.lights.add(dir_light);
+    s.allocated_lights.push_back(dir_light);
+
+    // Fill light from camera direction
+    directional_light* fill_light = new directional_light(unit_vector(vec3(0.0f, 2.0f, -1.0f)), color(0.0f, 0.0f, 0.0f), color(0.40f, 0.40f, 0.40f), color(0.05f, 0.05f, 0.05f));
+    s.lights.add(fill_light);
+    s.allocated_lights.push_back(fill_light);
+
+    // Duration: 3.5 seconds (105 frames at 30 fps)
+    s.wait(3.5f);
+
+    int total_frames = ceil(s.framerate * 3.5f); // 105 frames (0 to 104)
+    for (int i = 0; i < total_frames; i++)
+    {
+        // 1. Roadrunner: off-screen right (x = 24) until frame 80, then rockets left to x = -24 by frame 104
+        float rr_x = 24.0f;
+        vec3 rr_blur(0.0f, 0.0f, 0.0f);
+        if (i >= 81) {
+            float rr_u = (float)(i - 81) / (float)(total_frames - 1 - 81); // 0.0 to 1.0
+            rr_x = (1.0f - rr_u) * 24.0f + rr_u * (-24.0f);
+            rr_blur = vec3(-2.8f, 0.0f, 0.0f);
+        }
+        InstanceTransformations trans_rr;
+        trans_rr.inst = roadrunner;
+        trans_rr.setTranslation(rr_x, 1.81f, 8.0f);
+        trans_rr.rotationVector = vec3(0.0f, 0.0f, 0.0f);
+        trans_rr.has_blur_override = true;
+        trans_rr.blur_trans = rr_blur;
+
+        // 2. Ball: pushed slowly forward from x = 1.0 to 1.7 by frame 80, then rests at 1.7
+        float ball_x = 1.7f;
+        float ball_rot_z = -((1.7f - 1.0f) / 0.60f) * (180.0f / pi);
+        vec3 ball_blur(0.0f, 0.0f, 0.0f);
+        if (i < 80) {
+            float u = (float)i / 80.0f;
+            ball_x = (1.0f - u) * 1.0f + u * 1.7f;
+            ball_rot_z = -((ball_x - 1.0f) / 0.60f) * (180.0f / pi);
+            ball_blur = vec3(0.005f, 0.0f, 0.0f);
+        }
+        InstanceTransformations trans_ball;
+        trans_ball.inst = ball;
+        trans_ball.setTranslation(ball_x, 0.60f, 12.2f);
+        trans_ball.rotationVector = vec3(0.0f, 0.0f, ball_rot_z);
+        trans_ball.has_blur_override = true;
+        trans_ball.blur_trans = ball_blur;
+
+        // 3. Turtle: walks from x = -1.2 to -0.5 (frame 0-80), pauses (80-91),
+        // then when roadrunner passes (i >= 92), whirlwind whips turtle into rapid spin around Y
+        float turtle_x = -0.5f;
+        float turtle_pitch = 0.0f;
+        float turtle_roll = 0.0f;
+        float turtle_yaw = 0.0f;
+        float turtle_blur_yaw = 0.0001f;
+        vec3 turtle_blur_trans(0.0f, 0.0f, 0.0f);
+
+        if (i < 80) {
+            float u = (float)i / 80.0f;
+            turtle_x = (1.0f - u) * (-1.2f) + u * (-0.5f);
+            turtle_pitch = 1.5f * cos(u * 16.0f * pi);
+            turtle_roll = 1.5f * sin(u * 16.0f * pi);
+            turtle_blur_trans = vec3(0.005f, 0.0f, 0.0f);
+        } else if (i < 92) {
+            turtle_x = -0.5f;
+            turtle_pitch = 0.0f;
+            turtle_roll = 0.0f;
+            turtle_yaw = 0.0f;
+            turtle_blur_yaw = 0.0001f;
+        } else {
+            turtle_x = -0.5f;
+            float spin_u = (float)(i - 92) / (float)(total_frames - 1 - 92); // 0.0 to 1.0
+            turtle_yaw = 720.0f * spin_u * spin_u; // accelerates to 720 deg
+            turtle_blur_yaw = 60.0f * spin_u * spin_u + 0.0001f; // reaches 60 deg blur at cut
+        }
+
+        InstanceTransformations trans_turtle;
+        trans_turtle.inst = turtle;
+        trans_turtle.setTranslation(turtle_x, 0.35f, 13.0f);
+        trans_turtle.rotationVector = vec3(turtle_pitch, turtle_yaw, turtle_roll);
+        trans_turtle.has_blur_override = true;
+        trans_turtle.blur_trans = turtle_blur_trans;
+        trans_turtle.blur_rot = vec3(0.0f, turtle_blur_yaw, 0.0f);
+        trans_turtle.blur_rot_y = turtle_blur_yaw;
+
+        // 4. Rocks stacking up (rock_mid, rock_top, rock_tip):
+        // Lifted by roadrunner whirlwind, arcing onto rock_base to form cairn
+        // Mid rock flight: frames 88-94
+        vec3 mid_pos = mid_start_pos;
+        vec3 mid_rot = mid_start_rot;
+        vec3 mid_btrans(0.0f, 0.0f, 0.0f);
+        vec3 mid_brot(0.0f, 0.0f, 0.0f);
+        if (i >= 88 && i <= 94) {
+            float u = (float)(i - 88) / 6.0f;
+            float su = u * u * (3.0f - 2.0f * u);
+            mid_pos = (1.0f - su) * mid_start_pos + su * mid_target_pos;
+            mid_pos[1] += 1.4f * 4.0f * u * (1.0f - u);
+            mid_rot = (1.0f - su) * mid_start_rot + su * mid_target_rot + vec3(u * 180.0f, u * 120.0f, 0.0f);
+            mid_btrans = vec3(-0.3f, 0.4f * (1.0f - 2.0f * u), 0.0f);
+            mid_brot = vec3(15.0f, 25.0f, 10.0f);
+        } else if (i > 94) {
+            mid_pos = mid_target_pos;
+            mid_rot = mid_target_rot;
+        }
+        InstanceTransformations trans_mid;
+        trans_mid.inst = rock_mid;
+        trans_mid.setTranslation(mid_pos.x(), mid_pos.y(), mid_pos.z());
+        trans_mid.rotationVector = mid_rot;
+        trans_mid.has_blur_override = true;
+        trans_mid.blur_trans = mid_btrans;
+        trans_mid.blur_rot = mid_brot;
+
+        // Top rock flight: frames 90-97
+        vec3 top_pos = top_start_pos;
+        vec3 top_rot = top_start_rot;
+        vec3 top_btrans(0.0f, 0.0f, 0.0f);
+        vec3 top_brot(0.0f, 0.0f, 0.0f);
+        if (i >= 90 && i <= 97) {
+            float u = (float)(i - 90) / 7.0f;
+            float su = u * u * (3.0f - 2.0f * u);
+            top_pos = (1.0f - su) * top_start_pos + su * top_target_pos;
+            top_pos[1] += 1.8f * 4.0f * u * (1.0f - u);
+            top_rot = (1.0f - su) * top_start_rot + su * top_target_rot + vec3(u * 220.0f, -u * 150.0f, 0.0f);
+            top_btrans = vec3(0.2f, 0.5f * (1.0f - 2.0f * u), 0.0f);
+            top_brot = vec3(20.0f, -30.0f, 15.0f);
+        } else if (i > 97) {
+            top_pos = top_target_pos;
+            top_rot = top_target_rot;
+        }
+        InstanceTransformations trans_top;
+        trans_top.inst = rock_top;
+        trans_top.setTranslation(top_pos.x(), top_pos.y(), top_pos.z());
+        trans_top.rotationVector = top_rot;
+        trans_top.has_blur_override = true;
+        trans_top.blur_trans = top_btrans;
+        trans_top.blur_rot = top_brot;
+
+        // Tip rock flight: frames 92-100
+        vec3 tip_pos = tip_start_pos;
+        vec3 tip_rot = tip_start_rot;
+        vec3 tip_btrans(0.0f, 0.0f, 0.0f);
+        vec3 tip_brot(0.0f, 0.0f, 0.0f);
+        if (i >= 92 && i <= 100) {
+            float u = (float)(i - 92) / 8.0f;
+            float su = u * u * (3.0f - 2.0f * u);
+            tip_pos = (1.0f - su) * tip_start_pos + su * tip_target_pos;
+            tip_pos[1] += 2.2f * 4.0f * u * (1.0f - u);
+            tip_rot = (1.0f - su) * tip_start_rot + su * tip_target_rot + vec3(-u * 260.0f, u * 190.0f, 0.0f);
+            tip_btrans = vec3(0.1f, 0.6f * (1.0f - 2.0f * u), 0.0f);
+            tip_brot = vec3(-25.0f, 35.0f, 20.0f);
+        } else if (i > 100) {
+            tip_pos = tip_target_pos;
+            tip_rot = tip_target_rot;
+        }
+        InstanceTransformations trans_tip;
+        trans_tip.inst = rock_tip;
+        trans_tip.setTranslation(tip_pos.x(), tip_pos.y(), tip_pos.z());
+        trans_tip.rotationVector = tip_rot;
+        trans_tip.has_blur_override = true;
+        trans_tip.blur_trans = tip_btrans;
+        trans_tip.blur_rot = tip_brot;
+
+        std::vector<InstanceTransformations> frame_vec;
+        frame_vec.push_back(trans_rr);
+        frame_vec.push_back(trans_ball);
+        frame_vec.push_back(trans_turtle);
+        frame_vec.push_back(trans_mid);
+        frame_vec.push_back(trans_top);
+        frame_vec.push_back(trans_tip);
+        s.frame_transforms.push_back(frame_vec);
+    }
+
+    return s;
 }
+
 
 inline SceneData turtle_scene_coyote()
 {
     // Same still life from before:
-    // - wooden pole on the left (cylinder with cartoon wood texture)
     // - group of three cacti
     // - rocks stacked up one upon another (cairn/rock tower)
     // - pixar textured ball sitting nearby, kicked out to the right with tumbleweed motion and shutter motion blur
@@ -509,21 +817,13 @@ inline SceneData turtle_scene_coyote()
     add_instance(s, "rock4.obj", vec3(38.0f, 24.0f, 30.0f), vec3(0.0f, 30.0f, 0.0f), vec3(-50.0f, 12.0f, 112.0f), "desertrock3.jpg", 2.0f, 2.0f);
     add_instance(s, "rock2.obj", vec3(20.0f, 30.0f, 20.0f), vec3(0.0f, -30.0f, 0.0f), vec3(-33.0f, 27.0f, 96.0f), "desertrock2.jpg", 1.5f, 2.0f);
 
-    // 1. Wooden pole on the left (cylinder with cartoon wood texture)
-    material* pole_mat = setup_material(s, "cartoon_wood.png", 1.0f, 2.5f);
-    cylinder* pole_raw = new cylinder(0.0f, 5.2f, 0.35f, pole_mat);
-    s.allocated_hittables.push_back(pole_raw);
-    auto pole_inst = make_shared<instance>(pole_raw, pole_mat);
-    pole_inst->rotate_z(-2.0f);
-    pole_inst->translate(-5.8f, 0.0f, 13.5f);
-    s.world.add(pole_inst);
 
-    // 2. Group of three cacti
+    // 1. Group of three cacti
     add_instance(s, "cactus.obj", vec3(1.35f, 1.35f, 1.35f), vec3(0.0f, 20.0f, 0.0f), vec3(-4.4f, 0.0f, 14.8f), "cactus.png");
     add_instance(s, "cactus.obj", vec3(0.95f, 0.95f, 0.95f), vec3(0.0f, -35.0f, 0.0f), vec3(-3.2f, 0.0f, 15.5f), "cactus.png");
     add_instance(s, "cactus.obj", vec3(0.70f, 0.70f, 0.70f), vec3(0.0f, 45.0f, 0.0f), vec3(-5.2f, 0.0f, 15.0f), "cactus.png");
 
-    // 3. Rocks stacked up one upon another (cairn/rock tower on right)
+    // 2. Rocks stacked up one upon another (cairn/rock tower on right)
     auto rock_base = add_instance(s, "rock3.obj", vec3(1.35f, 0.65f, 1.25f), vec3(0.0f, 10.0f, 0.0f), vec3(3.2f, 0.25f, 13.8f), "desertrock1.jpg");
     auto rock_mid = add_instance(s, "rock5.obj", vec3(1.05f, 0.85f, 0.95f), vec3(0.0f, -25.0f, 0.0f), vec3(3.15f, 0.92f, 13.8f), "desertrock2.jpg");
     auto rock_top = add_instance(s, "rock1.obj", vec3(0.80f, 0.68f, 0.80f), vec3(0.0f, 35.0f, 0.0f), vec3(3.10f, 1.62f, 13.8f), "desertrock3.jpg");
@@ -532,7 +832,7 @@ inline SceneData turtle_scene_coyote()
     add_instance(s, "rock5.obj", vec3(0.55f, 0.32f, 0.50f), vec3(0.0f, 40.0f, 0.0f), vec3(2.0f, 0.15f, 13.2f), "desertrock2.jpg");
     add_instance(s, "rock1.obj", vec3(0.45f, 0.25f, 0.42f), vec3(0.0f, -20.0f, 0.0f), vec3(4.2f, 0.12f, 14.2f), "desertrock3.jpg");
 
-    // 4. Pixar textured ball (moving_instance capable of spinning, hopping, and shutter motion blur)
+    // 3. Pixar textured ball (moving_instance capable of spinning, hopping, and shutter motion blur)
     material* ball_mat = setup_material(s, "pixar_ball.png");
     ball_mat->ks = color(0.20f, 0.20f, 0.20f);
     sphere* raw_ball = new sphere(point3(0.0f, 0.0f, 0.0f), 0.60f, ball_mat);
@@ -547,7 +847,7 @@ inline SceneData turtle_scene_coyote()
     ball->frame_trans = vec3(1.7f, 0.60f, 12.2f);
     s.world.add(ball);
 
-    // 5. Turtle with rotational motion blur (moving_instance with overwritten motion blur quantity)
+    // 4. Turtle with rotational motion blur (moving_instance with overwritten motion blur quantity)
     point3 turtle_pos(-0.5f, 0.35f, 13.0f);
     auto turtle = add_moving_instance(
         s, "turtle.obj",
@@ -559,7 +859,7 @@ inline SceneData turtle_scene_coyote()
     );
     turtle->frame_trans = turtle_pos;
 
-    // 6. Coyote on ACME rocket closer to camera (z = 8.0) with translational motion blur
+    // 5. Coyote on ACME rocket closer to camera (z = 8.0) with translational motion blur
     vec3 coyote_start_pos(22.0f, 1.45f, 8.0f);
     auto coyote = add_moving_instance(
         s, "wile_e_coyote_rocket.obj",
@@ -703,11 +1003,6 @@ inline SceneData turtle_scene_coyote()
     }
 
     return s;
-}
-
-inline SceneData wasted_turtle_scene()
-{
-// todo: same still life from before - turtle is no longer spinning, but it has capsized. The pole has fallen to the ground and everything is now black (burnt). Duration: 3 seconds.
 }
 
 inline SceneData running_roadrunner_scene()
