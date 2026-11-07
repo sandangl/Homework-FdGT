@@ -4,10 +4,12 @@
 #include <iostream>
 
 int run_spotlight_tests(const char* filter);
+int run_coyote_scene_tests(const char* filter);
 
 int main(int argc, char** argv) {
   const char* filter = argc > 1 ? argv[1] : nullptr;
   int failed = run_spotlight_tests(filter);
+  failed += run_coyote_scene_tests(filter);
 
   std::cout << failed << " failed\n";
   return failed;
