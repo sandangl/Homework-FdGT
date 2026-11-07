@@ -1027,12 +1027,198 @@ inline SceneData freezed_coyote_scene()
 
 inline SceneData coyote_time_scene()
 {
-// todo: falling scene - roadrunner stops at the edge. Some time later, Coyote gets past beyond the edge. The camera start following him. Then both stops for 3 seconds. Motion blur from current position to the bottom (out of field). Duration: 10 seconds.
+    // Falling scene (coyote time):
+    // - Roadrunner dashes in and stops right at the cliff edge.
+    // - Coyote rockets in behind, overshoots past the edge into open air.
+    // - The camera tracks right to follow Coyote out into mid-air.
+    // - Both stop in mid-air for 3 seconds (90 frames of frozen suspense).
+    // - Coyote drops vertically out of field with high downward motion blur.
+    // Duration: 10 seconds (300 frames at 30 fps).
+    SceneData s;
+
+    // Camera setup with shutter motion blur ([t0, t1] = [0.0, 0.5], 24 shutter instants)
+    setup_camera(s, point3(0.0f, 3.8f, 2.0f), point3(2.5f, 2.0f, 12.0f), 48.0f);
+    s.cam.t0 = 0.0f;
+    s.cam.t1 = 0.5f;
+    s.cam.csi = 24.0f;
+    s.cam.samples_per_pixel = 24;
+    s.move_also_lookat = true;
+
+    // Sky environment texture
+    environment_texture* sky_tex = new environment_texture("../models/cartoon_canyon_sky_equirectangular_4k.png", 2.2f, 0.0f, 0.26f);
+    s.cam.environment_texture_sky = sky_tex;
+    s.textures.push_back(sky_tex);
+
+    // Directional sunlight + fill light
+    vec3 sun_dir = unit_vector(vec3(0.25f, 0.80f, -0.50f));
+    directional_light* dir_light = new directional_light(sun_dir, color(0.35f, 0.35f, 0.35f), color(0.95f, 0.92f, 0.85f), color(0.15f, 0.15f, 0.15f));
+    s.lights.add(dir_light);
+    s.allocated_lights.push_back(dir_light);
+
+    directional_light* fill_light = new directional_light(unit_vector(vec3(0.0f, 2.0f, -1.0f)), color(0.0f, 0.0f, 0.0f), color(0.40f, 0.40f, 0.40f), color(0.05f, 0.05f, 0.05f));
+    s.lights.add(fill_light);
+    s.allocated_lights.push_back(fill_light);
+
+    // Rocky cliff ground promontory:
+    // Natural canyon rock slabs and pillars forming the ground and sheer cliff edge.
+    // The background canyon landscape is provided by the equirectangular sky texture.
+
+    // 1. Hero cliff edge rock slab (jutting promontory ending at x = 0.0f)
+    auto cliff_rock = add_instance(s, "rock3.obj", vec3(3.8f, 1.4f, 3.8f), vec3(0.0f, 25.0f, 0.0f), vec3(-0.4f, -0.6f, 12.0f), "desertrock1.jpg");
+    cliff_rock->getMaterial()->kd = color(0.72f, 0.48f, 0.32f);
+
+    // 2. Sheer vertical cliff pillar supporting the ledge from below
+    auto cliff_pillar = add_instance(s, "rock2.obj", vec3(3.0f, 4.5f, 3.0f), vec3(0.0f, 10.0f, 0.0f), vec3(-0.9f, -3.5f, 12.0f), "desertrock1.jpg");
+    cliff_pillar->getMaterial()->kd = color(0.68f, 0.44f, 0.30f);
+
+    // 3. Main plateau rock slab extending leftward
+    auto r4_plat = add_instance(s, "rock4.obj", vec3(5.0f, 1.3f, 4.2f), vec3(0.0f, -20.0f, 0.0f), vec3(-4.2f, -0.8f, 12.2f), "desertrock2.jpg");
+    r4_plat->getMaterial()->kd = color(0.70f, 0.46f, 0.32f);
+
+    // 4. Foreground flanking rock slab (closer to camera)
+    auto r5_fg = add_instance(s, "rock5.obj", vec3(4.0f, 1.4f, 3.5f), vec3(0.0f, 40.0f, 0.0f), vec3(-2.6f, -0.7f, 10.4f), "desertrock3.jpg");
+    r5_fg->getMaterial()->kd = color(0.74f, 0.50f, 0.34f);
+
+    // 5. Background flanking rock slab
+    auto r3_bg = add_instance(s, "rock3.obj", vec3(4.5f, 1.4f, 4.0f), vec3(0.0f, 65.0f, 0.0f), vec3(-3.5f, -0.6f, 14.2f), "desertrock1.jpg");
+    r3_bg->getMaterial()->kd = color(0.68f, 0.44f, 0.30f);
+
+    // 6. Extended rocky terrain to the left (run-in path for Roadrunner and Coyote)
+    auto r4_ext1 = add_instance(s, "rock4.obj", vec3(6.0f, 1.4f, 5.0f), vec3(0.0f, 15.0f, 0.0f), vec3(-9.0f, -0.85f, 12.0f), "desertrock2.jpg");
+    r4_ext1->getMaterial()->kd = color(0.70f, 0.46f, 0.32f);
+
+    auto r3_ext2 = add_instance(s, "rock3.obj", vec3(6.5f, 1.4f, 5.5f), vec3(0.0f, -35.0f, 0.0f), vec3(-15.0f, -0.65f, 12.0f), "desertrock1.jpg");
+    r3_ext2->getMaterial()->kd = color(0.72f, 0.48f, 0.32f);
+
+    auto r4_ext3 = add_instance(s, "rock4.obj", vec3(7.5f, 1.4f, 6.0f), vec3(0.0f, 45.0f, 0.0f), vec3(-22.0f, -0.85f, 12.0f), "desertrock3.jpg");
+    r4_ext3->getMaterial()->kd = color(0.68f, 0.44f, 0.30f);
+
+    // 7. Small accent rocks on the plateau surface
+    auto r1_acc1 = add_instance(s, "rock1.obj", vec3(0.8f, 0.45f, 0.7f), vec3(0.0f, 15.0f, 0.0f), vec3(-1.6f, 0.15f, 13.0f), "desertrock2.jpg");
+    r1_acc1->getMaterial()->kd = color(0.72f, 0.48f, 0.32f);
+
+    auto r5_acc2 = add_instance(s, "rock5.obj", vec3(0.7f, 0.40f, 0.6f), vec3(0.0f, -20.0f, 0.0f), vec3(-2.2f, 0.18f, 11.2f), "desertrock3.jpg");
+    r5_acc2->getMaterial()->kd = color(0.70f, 0.46f, 0.32f);
+
+    // Roadrunner moving instance (running left to right along +X)
+    auto roadrunner = add_moving_instance(
+        s, "roadrunner_running.obj",
+        vec3(0.045f, 0.045f, 0.045f), // scale
+        vec3(0.0f, 90.0f, 0.0f),      // pointed along +X
+        vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f),
+        0.0f, 0.0f,
+        "roadrunner.png"
+    );
+    roadrunner->getMaterial()->is_toon = true;
+    roadrunner->getMaterial()->epsilon = 0.30f;
+    roadrunner->getMaterial()->K = 3;
+    roadrunner->getMaterial()->ka = color(0.25f, 0.25f, 0.25f);
+    roadrunner->frame_trans = vec3(-18.0f, 1.82f, 12.2f);
+
+    // Coyote strapped to ACME rocket (running left to right along +X)
+    auto coyote = add_moving_instance(
+        s, "wile_e_coyote_rocket.obj",
+        vec3(0.045f, 0.045f, 0.045f), // scale
+        vec3(0.0f, 90.0f, 0.0f),      // pointed along +X
+        vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f),
+        0.0f, 0.0f,
+        "wile_e_coyote_rocket.png"
+    );
+    coyote->getMaterial()->is_toon = true;
+    coyote->getMaterial()->epsilon = 0.30f;
+    coyote->getMaterial()->K = 3;
+    coyote->getMaterial()->ka = color(0.25f, 0.25f, 0.25f);
+    coyote->frame_trans = vec3(-26.0f, 1.85f, 11.8f);
+
+    // 10 seconds duration (300 frames at 30 fps)
+    int total_frames = ceil(s.framerate * 10.0f);
+    for (int i = 0; i < total_frames; i++)
+    {
+        // 1. Camera horizontal tracking: follows Coyote out over the abyss
+        float cam_x = 0.0f;
+        if (i >= 75 && i < 130) {
+            float u = (float)(i - 75) / 55.0f;
+            float su = u * u * (3.0f - 2.0f * u);
+            cam_x = su * 3.5f;
+        } else if (i >= 130) {
+            cam_x = 3.5f;
+        }
+        s.camera_positions.add(point3(cam_x, 3.8f, 2.0f));
+
+        // 2. Roadrunner: rushes in from off-screen left and skids to a stop at edge (x = -0.8f)
+        float rr_x = -0.8f;
+        vec3 rr_blur(0.0f, 0.0f, 0.0f);
+        if (i < 35) {
+            float u = (float)i / 35.0f;
+            float p = 1.0f - (1.0f - u) * (1.0f - u);
+            rr_x = (1.0f - p) * (-18.0f) + p * (-0.8f);
+            rr_blur = vec3((1.0f - u) * 1.8f, 0.0f, 0.0f);
+        }
+        InstanceTransformations trans_rr;
+        trans_rr.inst = roadrunner;
+        trans_rr.setTranslation(rr_x, 1.82f, 12.2f);
+        trans_rr.rotationVector = vec3(0.0f, 0.0f, 0.0f);
+        trans_rr.has_blur_override = true;
+        trans_rr.blur_trans = rr_blur;
+
+        // 3. Coyote: rushes from off-screen left, overshoots past edge to x = 5.5f,
+        // stops for 3 seconds (90 frames: 130-219), then falls with vertical motion blur
+        float coyote_x = -26.0f;
+        float coyote_y = 1.85f;
+        vec3 coyote_blur(0.0f, 0.0f, 0.0f);
+        float pitch = 0.0f;
+
+        if (i < 40) {
+            coyote_x = -26.0f;
+            coyote_y = 1.85f;
+            coyote_blur = vec3(0.0f, 0.0f, 0.0f);
+        } else if (i < 130) {
+            float u = (float)(i - 40) / 90.0f;
+            float p = 1.0f - pow(1.0f - u, 2.2f);
+            coyote_x = (1.0f - p) * (-26.0f) + p * 5.5f;
+            coyote_y = 1.85f;
+            coyote_blur = vec3((1.0f - u) * 2.2f, 0.0f, 0.0f);
+        } else if (i < 220) {
+            // Suspended in mid-air over abyss for 3 full seconds (90 frames: 130-219)
+            coyote_x = 5.5f;
+            coyote_y = 1.85f;
+            coyote_blur = vec3(0.0f, 0.0f, 0.0f);
+            if (i >= 180 && i < 210) {
+                pitch = 5.0f * sin((float)(i - 180) / 30.0f * 2.0f * pi);
+            }
+        } else {
+            // Free-fall plunge down out of field
+            coyote_x = 5.5f;
+            float fall_t = (float)(i - 220) / 30.0f;
+            float dy = 0.5f * 36.0f * fall_t * fall_t;
+            coyote_y = 1.85f - dy;
+            float speed_y = 36.0f * fall_t;
+            float blur_dy = -std::min(10.0f, speed_y * (0.5f / 30.0f) * 2.5f);
+            coyote_blur = vec3(0.0f, blur_dy, 0.0f);
+            pitch = -std::min(75.0f, fall_t * 60.0f);
+        }
+
+        InstanceTransformations trans_coyote;
+        trans_coyote.inst = coyote;
+        trans_coyote.setTranslation(coyote_x, coyote_y, 11.8f);
+        trans_coyote.rotationVector = vec3(pitch, 0.0f, 0.0f);
+        trans_coyote.has_blur_override = true;
+        trans_coyote.blur_trans = coyote_blur;
+
+        std::vector<InstanceTransformations> frame_vec;
+        frame_vec.push_back(trans_rr);
+        frame_vec.push_back(trans_coyote);
+        s.frame_transforms.push_back(frame_vec);
+    }
+
+    return s;
 }
 
 inline SceneData final_falling_coyote_scene()
 {
 // todo: final scene - camera is looking on -y direction. In the background, a plane with canyon valley texture. Coyote falls down (gets past the camera, and gets further and further down and scaling down its size quadratically)
+    SceneData s;
+    return s;
 }
 
 
