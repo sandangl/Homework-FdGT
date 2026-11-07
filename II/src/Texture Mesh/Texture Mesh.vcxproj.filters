@@ -56,6 +56,12 @@
     <ClInclude Include="raster.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="short_scenes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="test_scenes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="shader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -103,6 +109,21 @@
     </ClInclude>
     <ClInclude Include="mesh_bruteforce.h">
       <Filter>Header Files\Geometries</Filter>
+    </ClInclude>
+    <ClInclude Include="tinybvh\tiny_bvh_arm_double.h">
+      <Filter>Header Files\Libraries</Filter>
+    </ClInclude>
+    <ClInclude Include="tinybvh\tiny_bvh_arm_float.h">
+      <Filter>Header Files\Libraries</Filter>
+    </ClInclude>
+    <ClInclude Include="tinybvh\tiny_bvh_base.h">
+      <Filter>Header Files\Libraries</Filter>
+    </ClInclude>
+    <ClInclude Include="tinybvh\tiny_bvh_x86_double.h">
+      <Filter>Header Files\Libraries</Filter>
+    </ClInclude>
+    <ClInclude Include="tinybvh\tiny_bvh_x86_float.h">
+      <Filter>Header Files\Libraries</Filter>
     </ClInclude>
     <ClInclude Include="tinybvh\tiny_bvh.h">
       <Filter>Header Files\Libraries</Filter>

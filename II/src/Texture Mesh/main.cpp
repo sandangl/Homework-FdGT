@@ -239,7 +239,9 @@ int main(int argc, char* argv[])
 
     // choose_test_scene(scenes);
     load_short_script(scenes, record);
-    
+
+    int framecount = 0;
+        
     if (scenes.size() == 0) quit = true;
 
     for (auto& make_scene : scenes)
@@ -267,8 +269,6 @@ int main(int argc, char* argv[])
 #else
         cout << "Ray-mesh intersection: brute force (all triangles)" << endl;
 #endif
-        
-        int framecount = 0;
         
         if (scene.camera_positions.length() == 0)
         {
