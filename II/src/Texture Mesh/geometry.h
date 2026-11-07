@@ -9,6 +9,9 @@ public:
 	point3 point;
 	vec3 normal;
 	material* mat = nullptr;
+	bool custom_uv = false;
+	float u_min = -50.0f, u_max = 50.0f;
+	float v_min = -128.0f, v_max = -28.0f;
 
 	plane() {}
 
@@ -16,6 +19,17 @@ public:
 		point = p;
 		normal = unit_vector(n);
 		mat = m;
+	}
+
+	plane(const point3 p, const vec3 &n, float umin, float umax, float vmin, float vmax, material* m = nullptr) {
+		point = p;
+		normal = unit_vector(n);
+		mat = m;
+		custom_uv = true;
+		u_min = umin;
+		u_max = umax;
+		v_min = vmin;
+		v_max = vmax;
 	}
 
 	bool hit(const ray& r, interval ray_t, hit_record& rec) const override {
@@ -27,10 +41,17 @@ public:
 				rec.p = r.at(t);
 				rec.set_face_normal(r, normal);
 				rec.m = mat;
-				// Stretch texture across visible room span (X: [-50, 50], Y: [-40, 20], Z: [-128, -28])
-				float u_raw = (fabs(normal.x()) > 0.5f) ? rec.p.z() : rec.p.x();
-				rec.u = (u_raw + 50.0f) / 100.0f;
-				rec.v = (fabs(normal.y()) > 0.5f) ? (rec.p.z() + 128.0f) / 100.0f : (rec.p.y() + 40.0f) / 60.0f;
+				if (custom_uv) {
+					float u_val = (fabs(normal.x()) > 0.5f) ? rec.p.z() : rec.p.x();
+					float v_val = (fabs(normal.y()) > 0.5f) ? rec.p.z() : rec.p.y();
+					rec.u = (u_val - u_min) / (u_max - u_min);
+					rec.v = (v_val - v_min) / (v_max - v_min);
+				} else {
+					// Stretch texture across visible room span (X: [-50, 50], Y: [-40, 20], Z: [-128, -28])
+					float u_raw = (fabs(normal.x()) > 0.5f) ? rec.p.z() : rec.p.x();
+					rec.u = (u_raw + 50.0f) / 100.0f;
+					rec.v = (fabs(normal.y()) > 0.5f) ? (rec.p.z() + 128.0f) / 100.0f : (rec.p.y() + 40.0f) / 60.0f;
+				}
 				return true;
 			}
 		}

@@ -33,6 +33,8 @@ struct InstanceTransformations
     shared_ptr<instance> inst;
     vec3 translationVector;
     vec3 rotationVector;
+    vec3 scaleVector = vec3(1.0f, 1.0f, 1.0f);
+    bool has_scale = false;
     vec3 blur_trans = vec3(0.0f, 0.0f, 0.0f);
     float blur_rot_y = 0.0f;
     vec3 blur_rot = vec3(0.0f, 0.0f, 0.0f);
@@ -43,12 +45,14 @@ struct InstanceTransformations
     {
         if (!inst || applied) return;
         inst->reset_to_base();
+        if (has_scale) inst->scale(scaleVector);
         if (rotationVector.x() != 0.0f) inst->rotate_x(rotationVector.x());
         if (rotationVector.y() != 0.0f) inst->rotate_y(rotationVector.y());
         if (rotationVector.z() != 0.0f) inst->rotate_z(rotationVector.z());
         inst->translate(translationVector);
         if (auto minst = std::dynamic_pointer_cast<moving_instance>(inst))
         {
+            if (has_scale) minst->scale_vec = scaleVector;
             minst->frame_trans = translationVector;
             minst->frame_rot = rotationVector;
             minst->frame_rot_y = 0.0f;
@@ -76,6 +80,20 @@ struct InstanceTransformations
     void apply_rotation()
     {
         apply();
+    }
+
+    void setScale(float s)
+    {
+        scaleVector = vec3(s, s, s);
+        has_scale = true;
+        applied = false;
+    }
+
+    void setScale(float sx, float sy, float sz)
+    {
+        scaleVector = vec3(sx, sy, sz);
+        has_scale = true;
+        applied = false;
     }
 
     void setTranslation(float dx, float dy, float dz)

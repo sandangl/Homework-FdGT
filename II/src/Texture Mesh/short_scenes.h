@@ -1,4 +1,5 @@
 #include <string>
+#include <fstream>
 #include "scenes.h"
 #include "spline.h"
 #include "point3_list.h"
@@ -1216,8 +1217,115 @@ inline SceneData coyote_time_scene()
 
 inline SceneData final_falling_coyote_scene()
 {
-// todo: final scene - camera is looking on -y direction. In the background, a plane with canyon valley texture. Coyote falls down (gets past the camera, and gets further and further down and scaling down its size quadratically)
+    // Final scene:
+    // - Camera looking straight down in -Y direction from high above the canyon.
+    // - Underneath, a big plane with unrepeated Wile E. Coyote cartoon canyon valley texture.
+    // - Two rocks on the left and right forming towering, narrowing canyon walls.
+    // - Coyote strapped to rocket falls past camera down into the gorge.
+    // - Rocket exhaust directly facing camera (rocket pointed down).
+    // - No motion blur, purely quadratic acceleration falling under gravity.
+    // Duration: 3.5 seconds (105 frames at 30 fps).
     SceneData s;
+
+    // Top-down camera pointing down -Y (vup pointing -Z so +X is right, -Z is up in frame)
+    setup_camera(s, point3(0.0f, 26.0f, 0.0f), point3(0.0f, 0.0f, 0.0f), 52.0f);
+    s.cam.vup = vec3(0.0f, 0.0f, -1.0f);
+    s.cam.t0 = 0.0f;
+    s.cam.t1 = 0.0f;
+    s.cam.samples_per_pixel = 1;
+    s.cam.csi = 0.0f;
+    s.wait(3.5f);
+
+    // Directional sunlight shining down into the gorge + fill light
+    vec3 sun_dir = unit_vector(vec3(0.35f, 0.85f, 0.35f));
+    directional_light* dir_light = new directional_light(sun_dir, color(0.35f, 0.35f, 0.35f), color(0.95f, 0.92f, 0.85f), color(0.15f, 0.15f, 0.15f));
+    s.lights.add(dir_light);
+    s.allocated_lights.push_back(dir_light);
+
+    directional_light* fill_light = new directional_light(vec3(0.0f, 1.0f, 0.0f), color(0.15f, 0.15f, 0.15f), color(0.45f, 0.42f, 0.38f), color(0.08f, 0.08f, 0.08f));
+    s.lights.add(fill_light);
+    s.allocated_lights.push_back(fill_light);
+
+    // Canyon valley floor texture
+    texture* valley_tex = new image_texture("../models/canyon_valley_floor.jpg", 1.0f, 1.0f);
+    s.textures.push_back(valley_tex);
+
+    material* floor_mat = new material();
+    floor_mat->tex = valley_tex;
+    floor_mat->ka = color(0.40f, 0.38f, 0.35f);
+    floor_mat->kd = color(0.90f, 0.88f, 0.85f);
+    floor_mat->ks = color(0.02f, 0.02f, 0.02f);
+    floor_mat->is_toon = false;
+    s.materials.push_back(floor_mat);
+
+    // Big plane underneath with non-repeating canyon valley texture (1:1 mapping, no tiling)
+    auto canyon_floor = make_shared<quad>(point3(-60.0f, -40.0f, 34.0f), vec3(120.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, -68.0f), floor_mat);
+    s.world.add(canyon_floor);
+
+    auto backup_plane = make_shared<plane>(point3(0.0f, -40.2f, 0.0f), vec3(0.0f, 1.0f, 0.0f), -60.0f, 60.0f, 34.0f, -34.0f, floor_mat);
+    s.world.add(backup_plane);
+
+    // Left canyon wall (upper rim + lower stepped cliff narrowing toward center)
+    auto rock_left_upper = add_instance(s, "rock4.obj", vec3(14.0f, 26.0f, 32.0f), vec3(0.0f, 25.0f, 8.0f), vec3(-30.0f, 2.0f, 0.0f), "desertrock1.jpg");
+    rock_left_upper->getMaterial()->kd = color(0.72f, 0.46f, 0.30f);
+
+    auto rock_left_lower = add_instance(s, "rock3.obj", vec3(10.0f, 20.0f, 24.0f), vec3(0.0f, -15.0f, -10.0f), vec3(-20.0f, -18.0f, 0.0f), "desertrock2.jpg");
+    rock_left_lower->getMaterial()->kd = color(0.70f, 0.44f, 0.28f);
+
+    // Right canyon wall (upper rim + lower stepped cliff narrowing toward center)
+    auto rock_right_upper = add_instance(s, "rock4.obj", vec3(14.0f, 26.0f, 32.0f), vec3(0.0f, -20.0f, -8.0f), vec3(30.0f, 2.0f, 0.0f), "desertrock1.jpg");
+    rock_right_upper->getMaterial()->kd = color(0.72f, 0.46f, 0.30f);
+
+    auto rock_right_lower = add_instance(s, "rock3.obj", vec3(10.0f, 20.0f, 24.0f), vec3(0.0f, 35.0f, 10.0f), vec3(20.0f, -18.0f, 0.0f), "desertrock3.jpg");
+    rock_right_lower->getMaterial()->kd = color(0.68f, 0.42f, 0.26f);
+
+    // Coyote strapped to rocket:
+    // Base rotation vec3(90.0f, 0.0f, 0.0f) tilts nose straight down (-Y) and
+    // rocket exhaust circular nozzle straight up (+Y), directly facing camera.
+    auto coyote = add_moving_instance(
+        s, "wile_e_coyote_rocket.obj",
+        vec3(0.045f, 0.045f, 0.045f), // scale
+        vec3(90.0f, 0.0f, 0.0f),      // rocket pointed down, exhaust facing camera
+        vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 0.0f),
+        0.0f, 0.0f,
+        "wile_e_coyote_rocket.png"
+    );
+    coyote->getMaterial()->is_toon = true;
+    coyote->getMaterial()->epsilon = 0.30f;
+    coyote->getMaterial()->K = 3;
+    coyote->getMaterial()->ka = color(0.25f, 0.25f, 0.25f);
+    coyote->frame_trans = vec3(0.0f, 22.0f, 0.0f);
+
+    // Multi-frame animation: 3.5 seconds = 105 frames
+    int total_frames = ceil(s.framerate * 3.5f);
+    for (int i = 0; i < total_frames; i++)
+    {
+        float u = (total_frames > 1) ? (float)i / (float)(total_frames - 1) : 0.0f;
+
+        // Quadratic falling under gravity: y(u) = y0 - dy * u^2
+        float y = 22.0f - 60.5f * (u * u);
+
+        // Cartoon size scaling: shrinks quadratically as Coyote plunges into distance
+        float scale_val = 0.045f * (1.0f - 0.50f * (u * u));
+
+        // Comical subtle wobbling as he plummets down
+        float pitch = 90.0f + 2.0f * sin(u * 14.0f * pi);
+        float yaw = 3.0f * cos(u * 10.0f * pi);
+        float roll = 4.0f * sin(u * 16.0f * pi);
+
+        InstanceTransformations trans_coyote;
+        trans_coyote.inst = coyote;
+        trans_coyote.setTranslation(0.0f, y, 0.0f);
+        trans_coyote.rotationVector = vec3(pitch, yaw, roll);
+        trans_coyote.has_blur_override = false;
+        trans_coyote.blur_trans = vec3(0.0f, 0.0f, 0.0f);
+        trans_coyote.setScale(scale_val);
+
+        std::vector<InstanceTransformations> frame_vec;
+        frame_vec.push_back(trans_coyote);
+        s.frame_transforms.push_back(frame_vec);
+    }
+
     return s;
 }
 
