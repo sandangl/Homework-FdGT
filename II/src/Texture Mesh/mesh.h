@@ -70,8 +70,14 @@ public:
 	static tinybvh::Ray to_tinybvh(const ray& r, interval ray_t) {
 		point3 o = r.origin() + ray_t.min * r.direction();
 		vec3 d = r.direction();
+		float max_t = ray_t.max - ray_t.min;
+		if (std::isnan(o[0]) || std::isnan(o[1]) || std::isnan(o[2]) ||
+		    std::isnan(d[0]) || std::isnan(d[1]) || std::isnan(d[2])) {
+			return tinybvh::Ray(tinybvh::bvhvec3(0.0f, 0.0f, 0.0f),
+			                    tinybvh::bvhvec3(0.0f, 0.0f, 1.0f), 0.0f);
+		}
 		return tinybvh::Ray(tinybvh::bvhvec3(o[0], o[1], o[2]),
-		                    tinybvh::bvhvec3(d[0], d[1], d[2]), ray_t.max - ray_t.min);
+		                    tinybvh::bvhvec3(d[0], d[1], d[2]), max_t);
 	}
 };
 
