@@ -160,7 +160,9 @@ endif()
 add_executable(tests
     "tests/main.cpp"
     "tests/spotlight_tests.cpp"
+    "tests/coyote_scene_tests.cpp"
     "Texture Mesh/test_scenes.h"
+    "Texture Mesh/short_scenes.h"
 )
 
 if(WINE_BIN)
@@ -171,4 +173,9 @@ target_link_options(tests PRIVATE -static-libgcc -static-libstdc++)
 target_include_directories(tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Texture Mesh")
 target_include_directories(tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/tests")
+target_include_directories(tests PRIVATE ${SDL2_INCLUDE_DIR} ${SDL2_IMAGE_INCLUDE_DIR})
+target_link_libraries(tests PRIVATE ${SDL2_LIB} ${SDL2_IMAGE_LIB})
+if(OpenMP_CXX_FOUND)
+  target_link_libraries(tests PRIVATE OpenMP::OpenMP_CXX)
+endif()
 
