@@ -25,6 +25,27 @@ In this homework (refer to [I/](./I/)), we experimented with camera improvements
 
 ---
 
+## Second Homework
+
+In this homework (refer to [II/](./II/)), we extended the ray tracer with advanced lighting, shading, texturing, temporal sampling, and an animated short film:
+
+- **Spotlights & Multi-Light Shading**: polymorphic light hierarchy supporting point, directional, spot (smooth dual-cone falloff), and extended area lights with normalized multi-source accumulation.
+- **Monte Carlo Soft Shadows**: planar quadrilateral area light sampling with stochastic shadow rays to produce realistic penumbra gradients.
+- **Toon Shading (Cel Shading)**: diffuse gradient quantization into $K$ bands, thresholded specular highlights, and edge-on contour silhouette extraction with material-level floor decoupling.
+- **Sky & Environment Mapping**: $360^\circ$ equirectangular background texture mapping with Stochastic Gradient Ascent (SGA) for automatic solar direction estimation and directional sun alignment.
+- **Primitive Texture Mapping**: analytic UV parameterization for spheres, capped cylinders (with parity-corrected bottom discs), quads, and boxes, featuring fractional wrapping and repetition.
+- **Motion Blur & Moving Instances**: shutter exposure intervals with temporal ray sampling ($\tau$) and thread-safe moving instances interpolating transformation parameters without BVH rebuilding.
+- **Animated Short Film**: multi-scene pipeline consuming lambda-factory queues across 11 scripted sequences with camera paths, dynamic lighting, and motion blur.
+
+[Full documentation](./II/README.md)
+
+<div style="display:flex; flex-direction: row; gap:16px; padding-top:8px;">
+    <img src="./II/deliverables/short.gif" width="50%"/>
+    <img src="./II/deliverables/best_frame.bmp" width="50%"/>
+</div>
+
+---
+
 ## Linux Development Setup (Cross-Compiling for Windows)
 
 To develop, compile, and run Windows targets on Linux using JetBrains Rider (or the CMake CLI):

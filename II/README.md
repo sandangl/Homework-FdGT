@@ -13,6 +13,7 @@ This project implements the following assignments and advanced rendering techniq
 - **Primitive Texture Mapping & Wrapping/Repetition** (Homework 8 - Easy / Medium)
 - **Motion Blur & Moving Instances** (Homework 5 - Medium)
 - **Modular Scene Architecture & Spotlight Unit Test Suite** (Engineering / Extra)
+- **Animated Short Film** (Homework 10 - Final Homework)
 
 ---
 
@@ -126,6 +127,13 @@ The revised implementation directly clamps $\theta_1 \le \theta_0$ and uses mono
 - Exact hard cutoffs when $\theta_1 = \theta_0$ without division-by-zero.
 - Strict circular symmetry around $\mathbf{s}$.
 - Distance invariance: $f_{\text{spot}}$ modulates angular spread only, keeping distance attenuation cleanly orthogonal.
+
+### c. Deliverables
+
+| Hard Edge (`1_spotlight_netto.bmp`) | Smooth Edge (`1_spotlight_sfumato.bmp`) |
+|:---:|:---:|
+| ![Hard Edge Spotlight](./deliverables/1_spotlight_netto.bmp) | ![Smooth Edge Spotlight](./deliverables/1_spotlight_sfumato.bmp) |
+| $\theta = 22^\circ$, $\text{smoothness} = 1.0$ | $\theta_i = 12^\circ, \theta_o = 24^\circ$, $\text{smoothness} = 0.5$ |
 
 ---
 
@@ -284,6 +292,27 @@ In `scenes.h`, we constructed multiple pre-configured scenes demonstrating each 
 - `create_scene_4_extended_light_only()`: Area light soft shadows cast by an obstruction sphere onto the Stanford Bunny and ground plane.
 - `create_scene_5_all_lights()`: Combined multi-emitter environment with complex shadow interactions.
 
+#### Multi-Light Demonstrations
+
+| Colored Point Lights (`3_tre_luci_colorate.bmp`) | Three Spotlights (`3_tre_spotlights.bmp`) |
+|:---:|:---:|
+| ![Three Colored Lights](./deliverables/3_tre_luci_colorate.bmp) | ![Three Spotlights](./deliverables/3_tre_spotlights.bmp) |
+| RGB point lights producing CMY shadows | Three colored spotlights converging on scene |
+
+#### Extended Light & Soft Shadows ($N$ Monte Carlo Samples)
+
+Measurements on $700 \times 393$ resolution (multi-threaded PPL):
+
+| Point Light Baseline (`3_ombre_morbide_puntiforme.bmp`) | Area Light $N=1$ (`3_ombre_morbide_N1.bmp`) |
+|:---:|:---:|
+| ![Point Light Baseline](./deliverables/3_ombre_morbide_puntiforme.bmp) | ![Area Light N=1](./deliverables/3_ombre_morbide_N1.bmp) |
+| Hard shadow (9.775 s) | Stochastic noise (7.204 s) |
+
+| Area Light $N=16$ (`3_ombre_morbide_N16.bmp`) | Area Light $N=256$ (`3_ombre_morbide_N256.bmp`) |
+|:---:|:---:|
+| ![Area Light N=16](./deliverables/3_ombre_morbide_N16.bmp) | ![Area Light N=256](./deliverables/3_ombre_morbide_N256.bmp) |
+| Reduced noise (5.814 s) | Smooth penumbra (8.088 s) |
+
 ---
 
 ## 3. Toon Shading
@@ -387,6 +416,18 @@ public:
 ```
 
 In `create_toon_scene()`, curved geometry (Stanford Bunny, spheres) sets `mat->is_toon = true`, enabling crisp contours and discrete stepped shading, while the horizontal floor plane sets `floor_mat->is_toon = false`, keeping the ground horizon clean and free of dark artifacts.
+
+### d. Deliverables
+
+| Phong Baseline (`4_toon_phong.bmp`) | Toon $K=2$ (`4_toon_K2.bmp`) |
+|:---:|:---:|
+| ![Phong Baseline](./deliverables/4_toon_phong.bmp) | ![Toon K=2](./deliverables/4_toon_K2.bmp) |
+| Continuous Phong reference | 2 quantization levels, specular blotch and silhouette |
+
+| Toon $K=3$ (`4_toon_K3.bmp`) | Toon $K=5$ (`4_toon_K5.bmp`) |
+|:---:|:---:|
+| ![Toon K=3](./deliverables/4_toon_K3.bmp) | ![Toon K=5](./deliverables/4_toon_K5.bmp) |
+| 3 quantization levels | 5 quantization levels |
 
 ---
 
@@ -504,6 +545,13 @@ Sun Direction Angular Error: 0.089 deg
 ```
 
 The resulting `directional_light` casts crisp shadows from the Stanford Bunny and spheres that correspond to the position of the sun in the sky.
+
+### e. Deliverables
+
+| Procedural Gradient Sky (`9_cielo_gradiente.bmp`) | Equirectangular Sky Texture (`9_cielo_texture.bmp`) |
+|:---:|:---:|
+| ![Procedural Gradient Sky](./deliverables/9_cielo_gradiente.bmp) | ![Equirectangular Sky Texture](./deliverables/9_cielo_texture.bmp) |
+| Vertical gradient with point light | Equirectangular map with SGA-aligned directional sunlight |
 
 ---
 
@@ -625,6 +673,13 @@ y1 = (y1 % imageHeight + imageHeight) % imageHeight;
 ```
 
 This enables seamless tiling across ground planes, walls, and curved primitives.
+
+### f. Deliverables
+
+| Labeled Quadrant Grid (`8_primitive_griglia.bmp`) | Custom Textures with Repeat Wrap (`8_primitive_scelta.bmp`) |
+|:---:|:---:|
+| ![Labeled Quadrant Grid](./deliverables/8_primitive_griglia.bmp) | ![Custom Textures](./deliverables/8_primitive_scelta.bmp) |
+| Grid applied to sphere, capped cylinder, and box | Earth sphere, cat cylinder (repeat $u=2$), checkerboard box ($2\times 2$) |
 
 ---
 
@@ -755,10 +810,20 @@ We implemented the two required diagnostic setups in `scenes.h`:
      - `ferma` ($t_0 = t_1 = 0$, $32\text{ spp}$): completely sharp baseline.
      - `rimbalzo, 48 istanti` ($t_0 = 0, t_1 = 1$, $48\text{ spp}$): smooth vertical blur on the bouncing sphere and shadow, while the adjacent blue sphere remains razor-sharp.
 
+| Static Baseline (`5_motion_blur_rimbalzo_fermo.bmp`) | Vertical Bouncing Motion Blur (`5_motion_blur_rimbalzo_mosso.bmp`) |
+|:---:|:---:|
+| ![Bouncing Static](./deliverables/5_motion_blur_rimbalzo_fermo.bmp) | ![Bouncing Motion Blur](./deliverables/5_motion_blur_rimbalzo_mosso.bmp) |
+| Static spheres ($t_0 = t_1 = 0$, 32 spp) | Terracotta sphere in harmonic bounce (48 spp) |
+
 2. **Rotating Scene (`create_motion_blur_rotating_scene`)**:
    - Spherical globe resting on the checkerboard plane.
    - Rotates $\theta_0 = 0^\circ \to \theta_1 = 80^\circ$ around its vertical axis during exposure.
    - Motion blur follows the parallels (lines of latitude), while polar vertices remain stationary, exactly demonstrating axial rotation blur.
+
+| Static Baseline (`5_motion_blur_rotazione_fermo.bmp`) | Axial Rotation Motion Blur (`5_motion_blur_rotazione_mosso.bmp`) |
+|:---:|:---:|
+| ![Rotating Static](./deliverables/5_motion_blur_rotazione_fermo.bmp) | ![Rotating Motion Blur](./deliverables/5_motion_blur_rotazione_mosso.bmp) |
+| Static Earth globe ($t_0 = t_1 = 0$, 32 spp) | Earth globe rotating $80^\circ$ around polar axis (48 spp) |
 
 ---
 
@@ -842,3 +907,28 @@ Instead of writing directly to the window surface during worker thread execution
 The SDL event loop handles real-time user input:
 - `S`: Saves an uncompressed 24-bit BMP screenshot (`screenshot.bmp`) directly from the renderer buffer.
 - `ESC` / Window Close: Gracefully terminates the application and triggers RAII memory cleanup.
+
+---
+
+## 8. Animated Short Film (Homework 10)
+
+The final homework combines the engine features into a scripted animated short film.
+
+### a. Overview
+- **Multi-Scene Pipeline**: Decoupled scene builder architecture consuming a queue of scene-factory lambda functions.
+- **11 Scripted Sequences**: Total of 11 sequential scenes composing the short narrative.
+- **Environment Lighting**: Equirectangular background skies with automated solar direction alignment and complementary fill lights to preserve dynamic range and shadow detail.
+- **Dynamic Motion**: Coordinated camera splines and moving instances evaluated with temporal motion blur.
+
+### b. Deliverables
+
+| Animated Short (`short.gif`) |
+|:---:|
+| ![Animated Short](./deliverables/short.gif) |
+
+| Keyframe Highlight (`best_frame.bmp`) |
+|:---:|
+| ![Best Frame](./deliverables/best_frame.bmp) |
+
+Full high-resolution frame sequences and final video footage are accessible on [Google Drive](https://drive.google.com/drive/folders/1Jych7xDYYqV_k2B3mLIN_ZAGH2liG-JR?usp=sharing). External asset attributions are detailed in `LICENSE.txt`.
+
