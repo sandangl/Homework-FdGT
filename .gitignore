@@ -443,3 +443,5 @@ savedFrames
 *.mp4
 cmake-build-*
 /scripts/gen_cmake.conf
+/II/src/models/*
+!/II/src/models/README.txt
